@@ -35,7 +35,7 @@ variable "database_username" {
   default = "admin"
 }
 variable "database_password" {
-  default = "P@ssw0rd@123"
+  type = string
 }
 variable "team_name" {
   description = "Logical team name for PKI role binding"

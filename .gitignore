@@ -104,3 +104,7 @@ desktop.ini
 *.env
 .env.*
 secrets.yaml
+*.key
+*.pem
+*.jwt
+*.bak

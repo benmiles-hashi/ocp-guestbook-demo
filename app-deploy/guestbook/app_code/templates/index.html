@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vault Guestbook (VSO)</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+      <h1>✍️ Vault Guestbook Demo (VSO)</h1>
+
+      <!-- Cert Info -->
+      <div class="info-grid">
+        <div class="info-box">
+          <strong>🔒 Cert Serial</strong>
+          <code>{{serial}}</code>
+        </div>
+        <div class="info-box">
+          <strong>⏰ Expiration</strong>
+          <code>{{expires}}</code>
+        </div>
+      </div>
+
+      <!-- Vault Secrets -->
+      <div class="section">
+        <h2>🔑 Secrets from Vault</h2>
+        <div class="secret-box">
+          <p><strong>DB User:</strong> {{db_user}}</p>
+          <p><strong>DB Lease ID:</strong> {{lease_id}}</p>
+          <p><strong>Message from Vault:</strong> {{vault_message}}</p>
+          <p><strong>Vault Secret:</strong> {{vault_secret}}</p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="section">
+        <h2>Sign the Guestbook</h2>
+        <form method="post">
+          <label for="name">Name</label>
+          <input id="name" name="name" required>
+
+          <label for="message">Message</label>
+          <textarea id="message" name="message" rows="4" required></textarea>
+
+          <button type="submit">Sign Guestbook</button>
+        </form>
+      </div>
+
+      <!-- Entries -->
+      <div class="section">
+        <h2>Guestbook Entries</h2>
+        <div class="entries">
+         <ul>
+          {% for e in rows %}
+            <li><strong>{{ e[0] }}</strong> <em>({{ e[2] }})</em>: {{ e[1] }}</li>
+          {% endfor %}
+        </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,158 @@
+---
+- name: Configure OIDC discovery and JWKS for Vault Secrets Operator
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    cluster_id: "{{ lookup('env', 'CLUSTER_ID') }}"
+    vault_addr: "{{ lookup('env','VAULT_ADDR') }}"
+    vault_token: "{{ lookup('env','VAULT_TOKEN') }}"
+    vault_namespace: "admin"
+    vault_mount: "openshift"
+
+  tasks:
+    - name: Read ROSA cluster secrets from Vault (KV v2)
+      community.hashi_vault.vault_kv2_get:
+        url: "{{ vault_addr }}"
+        token: "{{ vault_token }}"
+        namespace: "{{ vault_namespace }}"
+        engine_mount_point: "{{ vault_mount }}"
+        path: "rosa/{{ cluster_id }}/infra"
+      register: rosa_secrets
+
+    - name: Log in to OpenShift
+      community.okd.openshift_auth:
+        host: "{{ rosa_secrets.data.data.api_url }}"
+        username: "{{ rosa_secrets.data.data.username }}"
+        password: "{{ rosa_secrets.data.data.password }}"
+        validate_certs: false
+      register: oc_auth
+
+    - name: Capture API token for k8s tasks
+      set_fact:
+        k8s_auth_api_key: "{{ oc_auth.openshift_auth.api_key }}"
+        api_url: "{{ rosa_secrets.data.data.api_url }}"
+
+    - name: Ensure clusterrolebinding for unauthenticated issuer discovery
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: service-account-issuer-discovery-unauthenticated
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: system:service-account-issuer-discovery
+          subjects:
+            - kind: Group
+              apiGroup: rbac.authorization.k8s.io
+              name: system:unauthenticated
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+    - name: Get OIDC issuer from cluster
+      kubernetes.core.k8s_info:
+        api_version: config.openshift.io/v1
+        kind: Authentication
+        name: cluster
+        api_key: "{{ oc_auth.openshift_auth.api_key }}"
+        host: "{{ oc_auth.openshift_auth.host }}"
+        validate_certs: false
+      register: oidc_info
+
+    - name: Derive OIDC issuer + JWKS URL
+      set_fact:
+        oidc_issuer: "{{ oidc_info.resources[0].spec.serviceAccountIssuer }}"
+        jwks_url: "{{ oidc_info.resources[0].spec.serviceAccountIssuer }}/keys.json"
+
+    - name: Extract OIDC hostname
+      set_fact:
+        oidc_host: "{{ oidc_issuer | regex_replace('^https?://([^/]+)/.*', '\\1') }}"
+
+    - name: Show derived OIDC info
+      debug:
+        msg:
+          - "OIDC Issuer: {{ oidc_issuer }}"
+          - "OIDC Host: {{ oidc_host }}"
+          - "JWKS URL: {{ jwks_url }}"
+
+    - name: Fetch certificate chain
+      community.crypto.get_certificate:
+        host: "{{ oidc_host }}"
+        port: 443
+        get_certificate_chain: true
+      register: oidc_cert
+
+    - name: Build CA bundle from verified chain
+      set_fact:
+        oidc_ca_pem: >-
+          {{
+            (oidc_cert.verified_chain | default([]))[1:] | join('')
+          }}
+
+
+    - name: Write OIDC info to Vault
+      community.hashi_vault.vault_kv2_write:
+        url: "{{ vault_addr }}"
+        token: "{{ vault_token }}"
+        namespace: "{{ vault_namespace }}"
+        engine_mount_point: "{{ vault_mount }}"
+        path: "rosa/{{ cluster_id }}/config"
+        data:
+          jwks_url: "{{ jwks_url }}"
+          oidc_ca_chain: "{{ oidc_ca_pem }}"
+
+    - name: Get Vault server certificate chain
+      community.crypto.get_certificate:
+        host: "{{ vault_addr | regex_replace('^https://','') | regex_replace(':8200','') }}"
+        port: 8200
+        get_certificate_chain: true
+      register: vault_server_cert
+
+    - name: Extract Vault CA PEM (skip leaf cert)
+      set_fact:
+        vault_ca_pem: "{{ (vault_server_cert.verified_chain | default([]))[1:] | join('') }}"
+
+    - name: Debug Vault CA cert (optional)
+      debug:
+        msg: "{{ vault_ca_pem }}"
+
+    - name: Create Kubernetes Secret for Vault CA
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: vault-cacert
+            namespace: openshift-operators
+          type: Opaque
+          data:
+            ca.crt: "{{ vault_ca_pem | b64encode }}"
+
+    - name: Apply VaultConnection CR
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: secrets.hashicorp.com/v1beta1
+          kind: VaultConnection
+          metadata:
+            name: default
+            namespace: openshift-operators
+          spec:
+            address: "{{ vault_addr }}"
+            tlsServerName: "{{ vault_addr | regex_replace('^https://','') | regex_replace(':8200','') }}"
+            caCertSecretRef: vault-cacert
+            skipTLSVerify: false
+
+    - name: Log out from OpenShift
+      community.okd.openshift_auth:
+        host: "{{ api_url }}"
+        state: absent
+        api_key: "{{ k8s_auth_api_key }}"
+        validate_certs: false
+      ignore_errors: true

@@ -1,0 +1,106 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+develop-eggs/
+.installed.cfg
+*.manifest
+*.spec
+*.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Virtual envs
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+Pipfile.lock
+poetry.lock
+
+# Jupyter
+.ipynb_checkpoints
+
+# =========================
+# Terraform
+# =========================
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform/
+.terraform.lock.hcl
+
+# =========================
+# Ansible
+# =========================
+*.retry
+*.vault-pass
+*.vault_password
+*.secrets
+*.secret
+*.bak
+*.orig
+
+# Ansible log files
+*.log
+
+# Ansible collections and cache
+.ansible/
+.ansible_async/
+.cache/
+fact_cache/
+
+# =========================
+# Generic OS / Editors
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# =========================
+# Local config overrides
+# =========================
+*.local
+*.env
+.env.*
+secrets.yaml

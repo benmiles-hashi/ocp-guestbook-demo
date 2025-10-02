@@ -1,0 +1,67 @@
+{{- if .Values.dbInit.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "guestbook.fullname" . }}-db-init
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mysql-init
+          image: {{ .Values.dbInit.image | quote }}
+          imagePullPolicy: {{ .Values.dbInit.pullPolicy | default "IfNotPresent" }}
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.secretName }}
+                  key: {{ .Values.db.usernameKey }}
+            - name: MYSQL_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.secretName }}
+                  key: {{ .Values.db.passwordKey }}
+            - name: DB_HOST
+            {{- if and .Values.db.hostFromSecret.enabled .Values.db.hostFromSecret.name .Values.db.hostFromSecret.key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.hostFromSecret.name }}
+                  key: {{ .Values.db.hostFromSecret.key }}
+            {{- else if .Values.db.host }}
+              value: {{ .Values.db.host | quote }}
+            {{- else }}
+              value: "localhost"
+            {{- end }}
+            - name: DB_NAME
+              value: {{ default .Release.Namespace .Values.db.name | quote }}
+          command: ["/bin/sh","-c"]
+          args:
+            - |
+              set -euo pipefail
+              echo "Waiting for MySQL at ${DB_HOST}..."
+              for i in $(seq 1 60); do
+                if mysql -h "${DB_HOST}" -u"${DB_USER}" -e "SELECT 1" >/dev/null 2>&1; then
+                  break
+                fi
+                echo "MySQL not ready yet; retrying..."
+                sleep 5
+              done
+              echo "Initializing schema for ${DB_NAME}..."
+              mysql -h "${DB_HOST}" -u"${DB_USER}" -e "
+                CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;
+                USE \`${DB_NAME}\`;
+                CREATE TABLE IF NOT EXISTS guestbook (
+                  id INT AUTO_INCREMENT PRIMARY KEY,
+                  name VARCHAR(100) NOT NULL,
+                  message TEXT NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+              "
+              echo "Schema applied successfully."
+              exit 0
+{{- end }}

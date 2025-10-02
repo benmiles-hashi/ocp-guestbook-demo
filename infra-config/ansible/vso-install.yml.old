@@ -1,0 +1,77 @@
+---
+- name: Install Vault Secrets Operator on ROSA
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    api_url: "https://api.hashifsi4.lnhj.p3.openshiftapps.com:443"
+    username: "kubeadmin"
+    password: "P@ssw0rd@12345!"
+    vso_namespace: "vault-secrets-operator"
+
+  tasks:
+    - name: Log in to OpenShift
+      community.okd.openshift_auth:
+        host: "{{ api_url }}"
+        username: "{{ username }}"
+        password: "{{ password }}"
+        validate_certs: false
+      register: openshift_auth_results
+
+    - name: Set fact for kubeconfig auth token
+      set_fact:
+        k8s_auth_api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+
+    - name: Ensure VSO namespace exists
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ vso_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+    - name: Create OperatorGroup for VSO
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: operators.coreos.com/v1
+          kind: OperatorGroup
+          metadata:
+            name: vso-operator-group
+            namespace: "{{ vso_namespace }}"
+          spec:
+            targetNamespaces:
+              - "{{ vso_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+    - name: Subscribe to Vault Secrets Operator
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: operators.coreos.com/v1alpha1
+          kind: Subscription
+          metadata:
+            name: vault-secrets-operator
+            namespace: "{{ vso_namespace }}"
+          spec:
+            channel: stable
+            name: vault-secrets-operator
+            source: redhat-operators
+            sourceNamespace: openshift-marketplace
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+    - name: Log out from OpenShift
+      community.okd.openshift_auth:
+        host: "{{ api_url }}"
+        state: absent
+        api_key: "{{ k8s_auth_api_key }}"
+        validate_certs: false

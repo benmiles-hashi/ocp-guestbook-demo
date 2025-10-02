@@ -1,0 +1,84 @@
+replicaCount: 2
+
+image:
+  repository: quay.io/bkmiles/vault-guestbook-app
+  tag: latest
+  pullPolicy: Always
+
+# Database config
+db:
+  # default DB/schema name = release namespace (overridable)
+  name: "guestbook"
+  # Option A: inject host directly (string)
+  host: "demo-db.chgcwq4a61in.us-east-1.rds.amazonaws.com"
+  # Option B: read host from a K8s Secret synced by Vault (preferred)
+  hostFromSecret:
+    enabled: false
+    name: guestbook-kv
+    key: host
+
+  # Dynamic DB creds secret (created by VaultDynamicSecret)
+  secretName: db-dynamic-creds-guestbook
+  usernameKey: username
+  passwordKey: password
+
+# Vault declarations (no VaultAuth here; platform pre-provisions it)
+vault:
+  authRef: vault-auth
+
+  dynamicSecrets:
+    - name: db-app-creds
+      mount: rosa-2lit29efhda2oils244c820lep0sgg5m-database
+      path: creds/guestbook-role
+      allowStaticCreds: false
+      refreshAfter: 30s
+      renewalPercent: 50
+      destination:
+        name: db-dynamic-creds-guestbook
+        type: Opaque
+
+  staticSecrets:
+    - name: guestbook-kv
+      mount: openshift
+      type: kv-v2
+      path: rosa/2lit29efhda2oils244c820lep0sgg5m/apps/guestbook/team-b/secretdata
+      refreshAfter: 10s
+      destination:
+        name: guestbook-kv
+        type: Opaque
+
+  pki:
+    - name: guestbook-tls
+      mount: pki_int
+      role: team-b
+      commonName: "guestbook.tenant-1.example.com"
+      altNames:
+      ttl: 5m
+      refreshAfter: 1m
+      format: pem
+      destination:
+        name: guestbook-tls
+        type: kubernetes.io/tls
+
+# DB init job settings
+dbInit:
+  enabled: false
+  image: registry.redhat.io/rhel8/mysql-80
+  pullPolicy: IfNotPresent
+  # If you must use a Red Hat image, set:
+  # image: registry.redhat.io/rhel8/mysql-80
+  # (ensure your cluster can pull from registry.redhat.io)
+
+service:
+  type: ClusterIP
+  port: 5000
+
+route:
+  enabled: true
+  host: "guestbook.apps.rosa.hashifsi4.pxdm.p3.openshiftapps.com"   # e.g., guestbook.apps.<cluster-domain>
+  termination: passthrough  # or edge
+  tlsSecretName: guestbook-tls
+
+extraEnv: {}
+  # MESSAGE: "Hello from Helm"
+  # SUPERSECRET: "super-secret-value"

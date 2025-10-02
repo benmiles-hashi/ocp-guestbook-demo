@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "guestbook.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  labels:
+    app: {{ include "guestbook.name" . }}
+    chart: {{ include "guestbook.chart" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "guestbook.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "guestbook.name" . }}
+    spec:
+      containers:
+        - name: guestbook
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            - name: DB_NAME
+              value: {{ default .Release.Namespace .Values.db.name | quote }}
+            - name: DB_HOST
+            {{- if and .Values.db.hostFromSecret.enabled .Values.db.hostFromSecret.name .Values.db.hostFromSecret.key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.hostFromSecret.name }}
+                  key: {{ .Values.db.hostFromSecret.key }}
+            {{- else if .Values.db.host }}
+              value: {{ .Values.db.host | quote }}
+            {{- else }}
+              value: "localhost"
+            {{- end }}
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.secretName }}
+                  key: {{ .Values.db.usernameKey }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.secretName }}
+                  key: {{ .Values.db.passwordKey }}
+            {{- range $k, $v := .Values.extraEnv }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          volumeMounts:
+            # Mount DB creds (username/password files)
+            - name: db-creds
+              mountPath: /secrets/db
+              readOnly: true
+            # Mount TLS certs from Vault PKI
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            - name: app-config
+              mountPath: /secrets/config
+              readOnly: true
+
+      volumes:
+        - name: db-creds
+          secret:
+            secretName: {{ .Values.db.secretName }}
+        - name: tls
+          secret:
+            secretName: {{ (index .Values.vault.pki 0).destination.name | quote }}
+        - name: app-config
+          secret:
+            secretName: {{ (index .Values.vault.staticSecrets 0).destination.name | quote }}
+

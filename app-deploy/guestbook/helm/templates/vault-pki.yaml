@@ -1,0 +1,41 @@
+{{- if .Values.vault.pki }}
+{{- range .Values.vault.pki }}
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultPKISecret
+metadata:
+  name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  vaultAuthRef: {{ $.Values.vault.authRef }}
+  mount: {{ .mount }}
+  role: {{ .role }}
+  commonName: {{ tpl .commonName $ }}
+  {{- if .altNames }}
+  altNames:
+  {{- range .altNames }}
+    - {{ tpl . $ }}
+  {{- end }}
+  {{- end }}
+  {{- if .ipSans }}
+  ipSans:
+  {{- range .ipSans }}
+    - {{ . }}
+  {{- end }}
+  {{- end }}
+  {{- if .ttl }}
+  ttl: {{ .ttl }}
+  {{- end }}
+  {{- if .format }}
+  format: {{ .format }}
+  {{- end }}
+  destination:
+    create: true
+    name: {{ .destination.name }}
+    {{- if .destination.type }}
+    type: {{ .destination.type }}
+    {{- end }}
+---
+{{- end }}
+{{- end }}

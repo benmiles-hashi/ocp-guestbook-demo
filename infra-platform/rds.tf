@@ -12,7 +12,7 @@ data "aws_subnets" "default" {
 
 # Security group for RDS MySQL
 resource "aws_security_group" "rds_mysql" {
-  name        = "rds-mysql--${module.rosa_hcp.cluster_id}-sg"
+  name        = "rds-mysql-${module.rosa_hcp.cluster_id}-sg"
   description = "Allow external MySQL access for Vault demo"
   vpc_id      = data.aws_vpc.default.id
 }

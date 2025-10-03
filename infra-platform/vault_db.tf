@@ -2,7 +2,7 @@
 # Store RDS creds in Vault for reference
 resource "vault_kv_secret_v2" "infra_rds" {
   mount = vault_mount.secret.path
-  name  = "rosa/${module.rosa_hcp.cluster_id}/infra/rds"
+  name  = "rds"
 
   data_json = jsonencode({
     username    = aws_db_instance.demo.username

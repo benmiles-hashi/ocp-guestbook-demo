@@ -12,7 +12,7 @@ except ImportError:
     sys.exit(1)
 
 # --- Config ---
-TFC_ORG = "ben-miles-org"
+TFC_ORG = "my-org"  # <-- set your Terraform Cloud org here
 
 # --- Load TFC token from ~/.terraform.d/credentials.tfrc.json ---
 CRED_FILE = os.path.expanduser("~/.terraform.d/credentials.tfrc.json")
@@ -106,15 +106,29 @@ existing_vars = {v["attributes"]["key"]: v for v in resp.json()["data"]}
 
 # --- Step 5: Upload or update vars ---
 for v in variables:
+    value = v["value"]
+
+    # Normalize booleans
+    if isinstance(value, bool):
+        value = "true" if value else "false"
+
+    # Lists/dicts → JSON/HCL and set hcl flag
+    hcl_flag = False
+    if isinstance(value, (list, dict)):
+        value = json.dumps(value)
+        hcl_flag = True
+
     attrs = {
         "key": v["name"],
-        "value": str(v["value"]),
+        "value": str(value),
         "description": v["description"],
         "category": "terraform",
-        "hcl": False,
+        "hcl": hcl_flag,
     }
+
     if v["sensitive"]:
         attrs["sensitive"] = True
+
 
     payload = {
         "data": {
@@ -131,14 +145,14 @@ for v in variables:
         if overwrite:
             r = requests.patch(f"https://app.terraform.io/api/v2/vars/{var_id}", headers=headers, json=payload)
             if r.status_code in [200, 201]:
-                print(f"✔ Updated {v['name']}")
+                print(f"Updated {v['name']}")
             else:
-                print(f"✖ Failed to update {v['name']}: {r.text}")
+                print(f"Failed to update {v['name']}: {r.text}")
         else:
-            print(f"⏩ Skipped {v['name']} (already exists, use --overwrite to update)")
+            print(f"Skipped {v['name']} (already exists, use --overwrite to update)")
     else:
         r = requests.post("https://app.terraform.io/api/v2/vars", headers=headers, json=payload)
         if r.status_code in [200, 201]:
             print(f"✔ Added {v['name']}")
         else:
-            print(f"✖ Failed to add {v['name']}: {r.text}")
+            print(f"Failed to add {v['name']}: {r.text}")

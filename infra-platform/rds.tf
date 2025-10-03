@@ -12,7 +12,7 @@ data "aws_subnets" "default" {
 
 # Security group for RDS MySQL
 resource "aws_security_group" "rds_mysql" {
-  name        = "rds-mysql-sg"
+  name        = "rds-mysql--${module.rosa_hcp.cluster_id}-sg"
   description = "Allow external MySQL access for Vault demo"
   vpc_id      = data.aws_vpc.default.id
 }
@@ -28,7 +28,7 @@ resource "aws_security_group_rule" "rds_mysql_ingress" {
 }
 
 resource "aws_db_instance" "demo" {
-  identifier          = "demo-db"
+  identifier          = "demo-db-${module.rosa_hcp.cluster_id}"
   allocated_storage   = 20
   storage_type        = "gp2"
   engine              = "mysql"
@@ -41,7 +41,7 @@ resource "aws_db_instance" "demo" {
   vpc_security_group_ids = [aws_security_group.rds_mysql.id]
   backup_retention_period = 0 # disable backups for cheapest option
   tags = {
-    Name = "demo-db"
+    Name = "demo-db-${module.rosa_hcp.cluster_id}"
   }
 }
 

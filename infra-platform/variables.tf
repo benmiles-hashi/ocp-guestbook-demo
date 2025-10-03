@@ -6,31 +6,37 @@ variable "cluster_name" {
 variable "openshift_version" {
   type        = string
   description = "OpenShift version to deploy"
+  default = "4.19.12"
 }
 
 variable "replicas" {
   type        = number
   description = "Number of worker nodes"
+  default = 2
 }
 
 variable "machine_cidr" {
   type        = string
   description = "Machine CIDR for the cluster"
+  default = "10.0.0.0/16"
 }
 
 variable "service_cidr" {
   type        = string
   description = "Service CIDR for the cluster"
+  default = "172.30.0.0/16"
 }
 
 variable "pod_cidr" {
   type        = string
   description = "Pod CIDR for the cluster"
+  default = "10.128.0.0/14"
 }
 
 variable "host_prefix" {
   type        = number
   description = "Host prefix for the pod network"
+  default = 23
 }
 
 variable "aws_subnet_ids" {
@@ -46,6 +52,7 @@ variable "aws_availability_zones" {
 variable "compute_machine_type" {
   type        = string
   description = "EC2 instance type for worker nodes"
+  default = "m5.xlarge"
 }
 
 variable "create_account_roles" {
@@ -56,6 +63,7 @@ variable "create_account_roles" {
 variable "account_role_prefix" {
   type        = string
   description = "Prefix for account IAM roles"
+  default = "ManagedOpenShift"
 }
 
 variable "create_oidc" {
@@ -81,11 +89,13 @@ variable "operator_role_prefix" {
 variable "ec2_metadata_http_tokens" {
   type        = string
   description = "Whether EC2 metadata requires tokens (optional/required)"
+  default = "optional"
 }
 
 variable "idp_name" {
   type        = string
   description = "Name of the identity provider"
+  default = "htpasswd-idp"
 }
 
 variable "idp_username" {

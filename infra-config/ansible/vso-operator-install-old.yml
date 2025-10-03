@@ -1,0 +1,118 @@
+---
+- name: Install Vault Secrets Operator on ROSA (cluster-wide via Certified Operators)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Inputs via env vars
+    cluster_id: "{{ lookup('env', 'CLUSTER_ID') }}"
+    vault_addr: "{{ lookup('env','VAULT_ADDR') }}"
+    vault_token: "{{ lookup('env','VAULT_TOKEN') }}"
+
+    # HCP Vault specifics
+    vault_namespace: "admin"       # HCP Vault namespace from your URL (/v1/admin/...)
+    vault_mount: "openshift"       # KVv2 mount from your URL (/v1/admin/openshift/data/...)
+
+    # Operator subscription targets (cluster-wide)
+    sub_namespace: "openshift-operators"
+    operator_package: "vault-secrets-operator"
+    operator_channel: "stable"
+    catalog_source: "certified-operators"
+    catalog_ns: "openshift-marketplace"
+
+  pre_tasks:
+    - name: Fail fast if required env vars are missing
+      ansible.builtin.fail:
+        msg: "Missing env var {{ item }}"
+      when: lookup('env', item) | length == 0
+      loop:
+        - CLUSTER_ID
+        - VAULT_ADDR
+        - VAULT_TOKEN
+
+  tasks:
+    - name: Read ROSA cluster secrets from HCP Vault (KVv2)
+      community.hashi_vault.vault_kv2_get:
+        url: "{{ vault_addr }}"
+        token: "{{ vault_token }}"
+        namespace: "{{ vault_namespace }}"
+        engine_mount_point: "{{ vault_mount }}"
+        path: "rosa/{{ cluster_id }}/infra"
+      register: rosa_secrets
+
+    - name: Extract cluster login details from Vault
+      set_fact:
+        api_url: "{{ rosa_secrets.data.data.api_url }}"
+        ocp_username: "{{ rosa_secrets.data.data.username }}"
+        ocp_password: "{{ rosa_secrets.data.data.password }}"
+
+    - name: Log in to OpenShift
+      community.okd.openshift_auth:
+        host: "{{ api_url }}"
+        username: "{{ ocp_username }}"
+        password: "{{ ocp_password }}"
+        validate_certs: false
+      register: oc_auth
+
+    - name: Capture API key for subsequent k8s tasks
+      set_fact:
+        k8s_auth_api_key: "{{ oc_auth.openshift_auth.api_key }}"
+
+    - name: Create Subscription for Vault Secrets Operator (cluster-wide)
+      kubernetes.core.k8s:
+        state: present
+        apply: true
+        definition:
+          apiVersion: operators.coreos.com/v1alpha1
+          kind: Subscription
+          metadata:
+            name: "{{ operator_package }}"
+            namespace: "{{ sub_namespace }}"
+          spec:
+            channel: "{{ operator_channel }}"
+            name: "{{ operator_package }}"
+            source: "{{ catalog_source }}"
+            sourceNamespace: "{{ catalog_ns }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+    - name: Wait for Subscription to report an installed CSV
+      kubernetes.core.k8s_info:
+        api_version: operators.coreos.com/v1alpha1
+        kind: Subscription
+        name: "{{ operator_package }}"
+        namespace: "{{ sub_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+      register: sub_info
+      until: sub_info.resources | length > 0 and
+             (sub_info.resources[0].status.installedCSV is defined) and
+             (sub_info.resources[0].status.installedCSV | length > 0)
+      retries: 20
+      delay: 10
+
+    - name: Wait for CSV to reach Succeeded
+      kubernetes.core.k8s_info:
+        api_version: operators.coreos.com/v1alpha1
+        kind: ClusterServiceVersion
+        name: "{{ sub_info.resources[0].status.installedCSV }}"
+        namespace: "{{ sub_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+      register: csv_info
+      until: csv_info.resources | length > 0 and
+             (csv_info.resources[0].status.phase | default('') == 'Succeeded')
+      retries: 30
+      delay: 10
+
+    - name: Log out from OpenShift
+      community.okd.openshift_auth:
+        host: "{{ api_url }}"
+        state: absent
+        api_key: "{{ k8s_auth_api_key }}"
+        validate_certs: false
+      ignore_errors: true

@@ -3,7 +3,7 @@ resource "vault_policy" "kv_infra" {
   name      = "openshift-rosa-infra"
 
   policy = <<EOT
-path "openshift-rosa-${module.rosa_hcp.cluster_id}}/infra/*" {
+path "openshift-rosa-${module.rosa_hcp.cluster_id}/infra/*" {
   capabilities = ["read", "list"]
 }
 EOT

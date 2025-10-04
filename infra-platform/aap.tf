@@ -1,11 +1,3 @@
-provider "aap" {
-  # configure with your AAP/Tower host & credentials
-  hostname = var.aap_hostname
-  username = var.aap_username
-  password = var.aap_password
-  insecure = true
-}
-
 # 1. Project
 resource "aap_project" "playbooks_project" {
   name        = "OCP Playbooks Project"

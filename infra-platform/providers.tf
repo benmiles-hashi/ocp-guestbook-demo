@@ -35,3 +35,10 @@ provider "vault" {
 provider "rhcs" {
   token = var.redhat_token
 }
+provider "aap" {
+  # configure with your AAP/Tower host & credentials
+  host = var.aap_hostname
+  username = var.aap_username
+  password = var.aap_password
+  insecure_skip_verify = true
+}

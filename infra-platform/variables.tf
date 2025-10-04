@@ -150,3 +150,27 @@ variable "redhat_token" {
   type= string
   sensitive = true
 }
+##--AAP Variables--##
+
+variable "aap_hostname" {
+  type        = string
+  description = "AAP/Tower controller hostname"
+}
+
+variable "aap_username" {
+  type        = string
+  description = "AAP username"
+  default = "admin"
+}
+
+variable "aap_password" {
+  type        = string
+  description = "AAP password"
+  sensitive   = true
+}
+
+variable "repo_url" {
+  type        = string
+  description = "Git repo containing playbooks"
+  default = "https://github.com/benmiles-hashi/ocp-guestbook-demo.git"
+}

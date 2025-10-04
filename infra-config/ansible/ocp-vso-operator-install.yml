@@ -12,7 +12,7 @@
 
     # HCP Vault specifics
     vault_namespace: "admin"       # HCP Vault namespace from your URL (/v1/admin/...)
-    vault_mount: "openshift"       # KVv2 mount from your URL (/v1/admin/openshift/data/...)
+    vault_mount: "openshift-rosa-{{cluster_id}}"       # KVv2 mount from your URL (/v1/admin/openshift/data/...)
 
     # Operator subscription targets (cluster-wide)
     sub_namespace: "openshift-operators"
@@ -38,7 +38,7 @@
         token: "{{ vault_token }}"
         namespace: "{{ vault_namespace }}"
         engine_mount_point: "{{ vault_mount }}"
-        path: "rosa/{{ cluster_id }}/infra"
+        path: "infra"
       register: rosa_secrets
 
     - name: Extract cluster login details from Vault
@@ -176,7 +176,7 @@
         token: "{{ vault_token }}"
         namespace: "{{ vault_namespace }}"
         engine_mount_point: "{{ vault_mount }}"
-        path: "rosa/{{ cluster_id }}/config"
+        path: "config"
         data:
           jwks_url: "{{ jwks_url }}"
           oidc_ca_chain: "{{ oidc_ca_pem }}"
@@ -195,6 +195,10 @@
     - name: Debug Vault CA cert (optional)
       debug:
         msg: "{{ vault_ca_pem }}"
+    - debug:
+        msg:
+          - "oc_auth host: {{ oc_auth.openshift_auth.host }}"
+          - "manual api_url: {{ api_url }}"
 
     - name: Create Kubernetes Secret for Vault CA
       kubernetes.core.k8s:
@@ -208,6 +212,9 @@
           type: Opaque
           data:
             ca.crt: "{{ vault_ca_pem | b64encode }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
 
     - name: Apply VaultConnection CR
       kubernetes.core.k8s:
@@ -223,7 +230,7 @@
             tlsServerName: "{{ vault_addr | regex_replace('^https://','') | regex_replace(':8200','') }}"
             caCertSecretRef: vault-cacert
             skipTLSVerify: false
-            
+
     - name: Log out from OpenShift
       community.okd.openshift_auth:
         host: "{{ api_url }}"

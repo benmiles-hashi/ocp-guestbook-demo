@@ -9,7 +9,7 @@
     vault_addr: "{{ lookup('env','VAULT_ADDR') }}"
     vault_token: "{{ lookup('env','VAULT_TOKEN') }}"
     vault_namespace: "admin"
-    vault_mount: "openshift"
+    vault_mount: "openshift-rosa-{{ cluster_id }}"
     sa_namespace: "kube-system"
     sa_name: "tf-admin"
 
@@ -20,7 +20,7 @@
         token: "{{ vault_token }}"
         namespace: "{{ vault_namespace }}"
         engine_mount_point: "{{ vault_mount }}"
-        path: "rosa/{{ cluster_id }}/infra"
+        path: "infra"
       register: rosa_secrets
 
     - name: Log in to OpenShift
@@ -124,5 +124,5 @@
         token: "{{ vault_token }}"
         namespace: "{{ vault_namespace }}"
         engine_mount_point: "{{ vault_mount }}"
-        path: "rosa/{{ cluster_id }}/infra"
+        path: "infra"
         data: "{{ rosa_secrets.data.data | combine({'token': sa_token, 'api_ca_pem': api_ca_pem}, recursive=True) }}"

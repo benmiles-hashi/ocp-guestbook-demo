@@ -17,7 +17,10 @@ resource "vault_auth_backend" "approle" {
 resource "vault_approle_auth_backend_role" "aap_controller" {
   backend        = vault_auth_backend.approle.path
   role_name      = "aap-controller"
-  token_policies = [vault_policy.kv_infra,vault_policy.pki]
+  token_policies = [
+    vault_policy.kv_infra.name,
+    vault_policy.pki.name
+  ]
 
   token_ttl     = 3600    # 1 hour
   token_max_ttl = 14400   # 4 hours

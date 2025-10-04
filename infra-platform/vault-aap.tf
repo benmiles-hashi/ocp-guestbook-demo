@@ -3,7 +3,7 @@ resource "vault_policy" "kv_infra" {
   name      = "openshift-pki"
 
   policy = <<EOT
-path "openshift-rosa-${var.cluster_id}/infra/*" {
+path "openshift-rosa-${module.rosa_hcp.cluster_id}}/infra/*" {
   capabilities = ["read", "list"]
 }
 EOT
@@ -18,8 +18,7 @@ resource "vault_approle_auth_backend_role" "aap_controller" {
   backend        = vault_auth_backend.approle.path
   role_name      = "aap-controller"
   token_policies = [
-    vault_policy.kv_infra.name,
-    vault_policy.pki.name
+    vault_policy.kv_infra.name
   ]
 
   token_ttl     = 3600    # 1 hour

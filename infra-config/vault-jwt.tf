@@ -1,28 +1,13 @@
-variable "cluster_id" {
-  description = "ROSA cluster ID"
-  type        = string
-}
 
-variable "vault_namespace" {
-  description = "Vault namespace to configure JWT auth"
-  type        = string
-  default     = "admin"
-}
-
-variable "vault_kv_mount" {
-  description = "KV v2 mount path where cluster metadata is stored"
-  type        = string
-  default     = "openshift"
-}
 
 # --- Get ROSA cluster secrets from Vault ---
 data "vault_kv_secret_v2" "rosa_cluster_config" {
-  mount     = var.vault_kv_mount
-  name      = "rosa/${var.cluster_id}/config"
+  mount     = "openshift-rosa-${var.cluster_id}"
+  name      = "config"
 }
 data "vault_kv_secret_v2" "rosa_cluster" {
-  mount     = var.vault_kv_mount
-  name      = "rosa/${var.cluster_id}/infra"
+  mount     = "openshift-rosa-${var.cluster_id}"
+  name      = "infra"
 }
 # --- Enable JWT auth backend for this cluster ---
 resource "vault_jwt_auth_backend" "jwt" {

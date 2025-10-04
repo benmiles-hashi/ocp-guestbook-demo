@@ -12,7 +12,7 @@ except ImportError:
     sys.exit(1)
 
 # --- Config ---
-TFC_ORG = "my-org"  # <-- set your Terraform Cloud org here
+TFC_ORG = "ben-miles-org"  # <-- set your Terraform Cloud org here
 
 # --- Load TFC token from ~/.terraform.d/credentials.tfrc.json ---
 CRED_FILE = os.path.expanduser("~/.terraform.d/credentials.tfrc.json")

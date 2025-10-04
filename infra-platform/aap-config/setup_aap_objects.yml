@@ -1,0 +1,114 @@
+---
+- name: Bootstrap Ansible Automation Platform (AAP) with Projects, Inventory, and Job Templates
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  collections:
+    - ansible.controller
+
+  vars:
+    controller_host: "{{ lookup('env', 'controller_host') }}"
+    controller_username: "admin"
+    controller_password: "{{ lookup('env', 'controller_password') }}"
+    controller_validate_certs: false
+
+    organization: "Default"
+
+    project_name: "OCP VSO Project"
+    repo_url: "{{ lookup('env', 'repo_url') }}"
+    repo_branch: "main"
+
+    inventory_name: "Localhost Inventory"
+
+  tasks:
+    - name: Ensure Project exists
+      ansible.controller.project:
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: "{{ controller_validate_certs }}"
+        name: "{{ project_name }}"
+        description: "Project with OCP demo playbooks"
+        organization: "{{ organization }}"
+        scm_type: git
+        scm_url: "{{ repo_url }}"
+        scm_branch: "{{ repo_branch }}"
+        scm_update_on_launch: true
+        state: present
+
+    - name: Force initial project sync
+      ansible.controller.project_update:
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: "{{ controller_validate_certs }}"
+        name: "{{ project_name }}"
+        wait: true
+
+    - name: Ensure Inventory exists
+      ansible.controller.inventory:
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: "{{ controller_validate_certs }}"
+        name: "{{ inventory_name }}"
+        description: "Localhost inventory for OCP demo"
+        organization: "{{ organization }}"
+        variables:
+          all:
+            hosts:
+              localhost:
+                ansible_connection: local
+        state: present
+
+    - name: Create job template for TF Admin SA Setup
+      ansible.controller.job_template:
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: "{{ controller_validate_certs }}"
+        name: "OCP - TF Admin SA Setup"
+        description: "Creates tf-admin SA and injects into Vault"
+        organization: "{{ organization }}"
+        project: "{{ project_name }}"
+        inventory: "{{ inventory_name }}"
+        playbook: "infra-config/ansible/ocp-tfe-admin-sa-setup.yml"
+        job_type: run
+        ask_variables_on_launch: true
+        extra_vars:
+          cluster_id: ""
+          vault_addr: ""
+          vault_token: ""
+          vault_namespace: "admin"
+          sa_namespace: "kube-system"
+          sa_name: "tf-admin"
+        state: present
+
+    - name: Create job template for VSO Operator Install
+      ansible.controller.job_template:
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: "{{ controller_validate_certs }}"
+        name: "OCP - VSO Operator Install"
+        description: "Installs Vault Secrets Operator on ROSA and configures OIDC in Vault"
+        organization: "{{ organization }}"
+        project: "{{ project_name }}"
+        inventory: "{{ inventory_name }}"
+        playbook: "infra-config/ansible/ocp-vso-operator-install.yml"
+        job_type: run
+        ask_variables_on_launch: true
+        extra_vars:
+          cluster_id: ""
+          vault_addr: ""
+          vault_token: ""
+          vault_namespace: "admin"
+          vault_mount: ""
+          sub_namespace: "openshift-operators"
+          operator_package: "vault-secrets-operator"
+          operator_channel: "stable"
+          catalog_source: "certified-operators"
+          catalog_ns: "openshift-marketplace"
+        state: present
+

@@ -79,6 +79,7 @@ override.tf.json
 .ansible_async/
 .cache/
 fact_cache/
+**/ansible.cfg
 
 # =========================
 # Generic OS / Editors
@@ -105,6 +106,8 @@ desktop.ini
 .env.*
 secrets.yaml
 *.key
-*.pem
-*.jwt
+**/*.pem
+**/*.jwt
 *.bak
+**/*.env
+test/*

@@ -1,0 +1,7 @@
+configures AAP project, inventory, and job_temples for:
+  ocp-tfe-admin-sa-setup.yml 
+  ocp-vso-operator-install.yml
+
+use:
+source aap-env.env
+ansible-playbook setup_aap_objects.yml

@@ -19,8 +19,8 @@ terraform {
       version = ">=1.7.1" # or whatever version you need
     }
     aap = {
-      source  = "ansible/aap"
-      version = "~> 1.0"   # check for latest
+      source = "ansible/aap"
+      version = "1.4.0-devpreview1"
     }
   }
 }

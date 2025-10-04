@@ -1,26 +1,7 @@
-terraform {
-  required_providers {
-    vault = {
-      source  = "hashicorp/vault"
-      version = "3.25.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "3.7.2"
-    }
-    rhcs = {
-      source  = "terraform-redhat/rhcs"
-      version = ">=1.7.1" # or whatever version you need
-    }
-  }
-}
+
 
 # Vault provider (supply address and bootstrap token in tfvars or env vars)
-provider "vault" {
-  address = var.vault_address
-  token   = var.vault_root_token
-  namespace = var.vault_namespace
-}
+
 
 # Generate a random password for the htpasswd IDP user
 resource "random_password" "kubeadmin_password" {

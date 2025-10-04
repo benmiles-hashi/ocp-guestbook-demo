@@ -1,12 +1,3 @@
-terraform {
-  required_providers {
-    aap = {
-      source  = "ansible/aap"
-      version = "~> 1.0"   # check for latest
-    }
-  }
-}
-
 provider "aap" {
   # configure with your AAP/Tower host & credentials
   hostname = var.aap_hostname

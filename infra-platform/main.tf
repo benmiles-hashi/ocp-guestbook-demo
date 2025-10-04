@@ -1,6 +1,3 @@
-provider "rhcs" {
-  token = var.redhat_token
-}
 module "rosa_hcp" {
   source  = "terraform-redhat/rosa-hcp/rhcs"
   version = "1.7.0"

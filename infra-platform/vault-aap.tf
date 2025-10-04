@@ -1,6 +1,6 @@
 resource "vault_policy" "kv_infra" {
   #namespace = var.vault_namespace
-  name      = "openshift-pki"
+  name      = "openshift-rosa-infra"
 
   policy = <<EOT
 path "openshift-rosa-${module.rosa_hcp.cluster_id}}/infra/*" {

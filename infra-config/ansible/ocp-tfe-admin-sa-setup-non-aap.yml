@@ -1,0 +1,128 @@
+---
+- name: Create tf-admin SA and add token to Vault
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    cluster_id: "{{ lookup('env', 'CLUSTER_ID') }}"
+    vault_addr: "{{ lookup('env','VAULT_ADDR') }}"
+    vault_token: "{{ lookup('env','VAULT_TOKEN') }}"
+    vault_namespace: "admin"
+    vault_mount: "openshift-rosa-{{ cluster_id }}"
+    sa_namespace: "kube-system"
+    sa_name: "tf-admin"
+
+  tasks:
+    - name: Read cluster login info from Vault
+      community.hashi_vault.vault_kv2_get:
+        url: "{{ vault_addr }}"
+        token: "{{ vault_token }}"
+        namespace: "{{ vault_namespace }}"
+        engine_mount_point: "{{ vault_mount }}"
+        path: "infra"
+      register: rosa_secrets
+
+    - name: Log in to OpenShift
+      community.okd.openshift_auth:
+        host: "{{ rosa_secrets.data.data.api_url }}"
+        username: "{{ rosa_secrets.data.data.username }}"
+        password: "{{ rosa_secrets.data.data.password }}"
+        validate_certs: false
+      register: openshift_auth_results
+
+    - name: Set fact for kubeconfig auth token
+      set_fact:
+        k8s_auth_api_key: "{{ openshift_auth_results.openshift_auth.api_key }}"
+
+    - name: Ensure tf-admin ServiceAccount exists
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: "{{ sa_name }}-{{ cluster_id }}"
+            namespace: "{{ sa_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ rosa_secrets.data.data.api_url }}"
+        validate_certs: false
+
+    - name: Bind tf-admin SA to cluster-admin
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: "tf-admin-crb-{{ cluster_id }}"
+          subjects:
+            - kind: ServiceAccount
+              name: "{{ sa_name }}-{{ cluster_id }}"
+              namespace: "{{ sa_namespace }}"
+          roleRef:
+            kind: ClusterRole
+            name: cluster-admin
+            apiGroup: rbac.authorization.k8s.io
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ rosa_secrets.data.data.api_url }}"
+        validate_certs: false
+
+    - name: Create Secret for SA token
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ sa_name }}-{{ cluster_id }}-token"
+            namespace: "{{ sa_namespace }}"
+            annotations:
+              kubernetes.io/service-account.name: "{{ sa_name }}-{{ cluster_id }}"
+          type: kubernetes.io/service-account-token
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ rosa_secrets.data.data.api_url }}"
+        validate_certs: false
+
+    - name: Wait for SA token secret to be populated
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: "{{ sa_name }}-{{ cluster_id }}-token"
+        namespace: "{{ sa_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ rosa_secrets.data.data.api_url }}"
+        validate_certs: false
+      register: sa_secret
+      until: sa_secret.resources | length > 0 and (sa_secret.resources[0].data.token is defined)
+      retries: 10
+      delay: 6
+    - name: show ca cert
+      debug:
+        var: openshift_auth_results
+    - name: Extract SA token
+      set_fact:
+        sa_token: "{{ sa_secret.resources[0].data.token | b64decode }}"
+
+    - name: Get API server certificate chain
+      community.crypto.get_certificate:
+        host: "{{ rosa_secrets.data.data.api_url | regex_replace('^https://','') | regex_replace(':443','') }}"
+        port: 443
+        get_certificate_chain: true
+      register: api_server_cert
+
+    - name: Extract Vault CA PEM (skip leaf cert)
+      set_fact:
+        api_ca_pem: "{{ (api_server_cert.verified_chain | default([]))[1:] | join('') }}"
+    - name: show cert
+      debug:
+        var: api_ca_pem
+
+    - name: Merge token into existing Vault secret
+      community.hashi_vault.vault_kv2_write:
+        url: "{{ vault_addr }}"
+        token: "{{ vault_token }}"
+        namespace: "{{ vault_namespace }}"
+        engine_mount_point: "{{ vault_mount }}"
+        path: "infra"
+        data: "{{ rosa_secrets.data.data | combine({'token': sa_token, 'api_ca_pem': api_ca_pem}, recursive=True) }}"

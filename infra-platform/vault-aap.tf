@@ -1,14 +1,23 @@
 resource "vault_policy" "kv_infra" {
   #namespace = var.vault_namespace
-  name      = "openshift-rosa-infra"
+  name      = "openshift-rosa-kv-read-infra-${module.rosa_hcp.cluster_id}"
 
   policy = <<EOT
-path "openshift-rosa-${module.rosa_hcp.cluster_id}/infra/*" {
+path "openshift-rosa-${module.rosa_hcp.cluster_id}/*" {
   capabilities = ["read", "list"]
 }
 EOT
 }
+resource "vault_policy" "aap_vault_write" {
+  #namespace = var.vault_namespace
+  name      = "openshift-rosa-kv-write-${module.rosa_hcp.cluster_id}"
 
+  policy = <<EOT
+path "openshift-rosa-${module.rosa_hcp.cluster_id}/*" {
+  capabilities = ["read", "list", "create"]
+}
+EOT
+}
 resource "vault_auth_backend" "approle" {
   type = "approle"
   path = "approle-aap"

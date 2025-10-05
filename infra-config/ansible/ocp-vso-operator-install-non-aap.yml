@@ -1,0 +1,240 @@
+---
+- name: Install Vault Secrets Operator on ROSA (cluster-wide via Certified Operators)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    # Inputs via env vars
+    cluster_id: "{{ lookup('env', 'CLUSTER_ID') }}"
+    vault_addr: "{{ lookup('env','VAULT_ADDR') }}"
+    vault_token: "{{ lookup('env','VAULT_TOKEN') }}"
+
+    # HCP Vault specifics
+    vault_namespace: "admin"       # HCP Vault namespace from your URL (/v1/admin/...)
+    vault_mount: "openshift-rosa-{{cluster_id}}"       # KVv2 mount from your URL (/v1/admin/openshift/data/...)
+
+    # Operator subscription targets (cluster-wide)
+    sub_namespace: "openshift-operators"
+    operator_package: "vault-secrets-operator"
+    operator_channel: "stable"
+    catalog_source: "certified-operators"
+    catalog_ns: "openshift-marketplace"
+
+  pre_tasks:
+    - name: Fail fast if required env vars are missing
+      ansible.builtin.fail:
+        msg: "Missing env var {{ item }}"
+      when: lookup('env', item) | length == 0
+      loop:
+        - CLUSTER_ID
+        - VAULT_ADDR
+        - VAULT_TOKEN
+
+  tasks:
+    - name: Read ROSA cluster secrets from HCP Vault (KVv2)
+      community.hashi_vault.vault_kv2_get:
+        url: "{{ vault_addr }}"
+        token: "{{ vault_token }}"
+        namespace: "{{ vault_namespace }}"
+        engine_mount_point: "{{ vault_mount }}"
+        path: "infra"
+      register: rosa_secrets
+
+    - name: Extract cluster login details from Vault
+      set_fact:
+        api_url: "{{ rosa_secrets.data.data.api_url }}"
+        ocp_username: "{{ rosa_secrets.data.data.username }}"
+        ocp_password: "{{ rosa_secrets.data.data.password }}"
+
+    - name: Log in to OpenShift
+      community.okd.openshift_auth:
+        host: "{{ api_url }}"
+        username: "{{ ocp_username }}"
+        password: "{{ ocp_password }}"
+        validate_certs: false
+      register: oc_auth
+
+    - name: Capture API key for subsequent k8s tasks
+      set_fact:
+        k8s_auth_api_key: "{{ oc_auth.openshift_auth.api_key }}"
+
+    - name: Create Subscription for Vault Secrets Operator (cluster-wide)
+      kubernetes.core.k8s:
+        state: present
+        apply: true
+        definition:
+          apiVersion: operators.coreos.com/v1alpha1
+          kind: Subscription
+          metadata:
+            name: "{{ operator_package }}"
+            namespace: "{{ sub_namespace }}"
+          spec:
+            channel: "{{ operator_channel }}"
+            name: "{{ operator_package }}"
+            source: "{{ catalog_source }}"
+            sourceNamespace: "{{ catalog_ns }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+    - name: Wait for Subscription to report an installed CSV
+      kubernetes.core.k8s_info:
+        api_version: operators.coreos.com/v1alpha1
+        kind: Subscription
+        name: "{{ operator_package }}"
+        namespace: "{{ sub_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+      register: sub_info
+      until: sub_info.resources | length > 0 and
+             (sub_info.resources[0].status.installedCSV is defined) and
+             (sub_info.resources[0].status.installedCSV | length > 0)
+      retries: 20
+      delay: 10
+
+    - name: Wait for CSV to reach Succeeded
+      kubernetes.core.k8s_info:
+        api_version: operators.coreos.com/v1alpha1
+        kind: ClusterServiceVersion
+        name: "{{ sub_info.resources[0].status.installedCSV }}"
+        namespace: "{{ sub_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+      register: csv_info
+      until: csv_info.resources | length > 0 and
+             (csv_info.resources[0].status.phase | default('') == 'Succeeded')
+      retries: 30
+      delay: 10
+
+    - name: Ensure clusterrolebinding for unauthenticated issuer discovery
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: service-account-issuer-discovery-unauthenticated
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: system:service-account-issuer-discovery
+          subjects:
+            - kind: Group
+              apiGroup: rbac.authorization.k8s.io
+              name: system:unauthenticated
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+    - name: Get OIDC issuer from cluster
+      kubernetes.core.k8s_info:
+        api_version: config.openshift.io/v1
+        kind: Authentication
+        name: cluster
+        api_key: "{{ oc_auth.openshift_auth.api_key }}"
+        host: "{{ oc_auth.openshift_auth.host }}"
+        validate_certs: false
+      register: oidc_info
+
+    - name: Derive OIDC issuer + JWKS URL
+      set_fact:
+        oidc_issuer: "{{ oidc_info.resources[0].spec.serviceAccountIssuer }}"
+        jwks_url: "{{ oidc_info.resources[0].spec.serviceAccountIssuer }}/keys.json"
+
+    - name: Extract OIDC hostname
+      set_fact:
+        oidc_host: "{{ oidc_issuer | regex_replace('^https?://([^/]+)/.*', '\\1') }}"
+
+    - name: Show derived OIDC info
+      debug:
+        msg:
+          - "OIDC Issuer: {{ oidc_issuer }}"
+          - "OIDC Host: {{ oidc_host }}"
+          - "JWKS URL: {{ jwks_url }}"
+
+    - name: Fetch certificate chain
+      community.crypto.get_certificate:
+        host: "{{ oidc_host }}"
+        port: 443
+        get_certificate_chain: true
+      register: oidc_cert
+
+    - name: Build CA bundle from verified chain
+      set_fact:
+        oidc_ca_pem: >-
+          {{
+            (oidc_cert.verified_chain | default([]))[1:] | join('')
+          }}
+
+
+    - name: Write OIDC info to Vault
+      community.hashi_vault.vault_kv2_write:
+        url: "{{ vault_addr }}"
+        token: "{{ vault_token }}"
+        namespace: "{{ vault_namespace }}"
+        engine_mount_point: "{{ vault_mount }}"
+        path: "config"
+        data:
+          jwks_url: "{{ jwks_url }}"
+          oidc_ca_chain: "{{ oidc_ca_pem }}"
+
+    - name: Get Vault server certificate chain
+      community.crypto.get_certificate:
+        host: "{{ vault_addr | regex_replace('^https://','') | regex_replace(':8200','') }}"
+        port: 8200
+        get_certificate_chain: true
+      register: vault_server_cert
+
+    - name: Extract Vault CA PEM (skip leaf cert)
+      set_fact:
+        vault_ca_pem: "{{ (vault_server_cert.verified_chain | default([]))[1:] | join('') }}"
+
+    - name: Debug Vault CA cert (optional)
+      debug:
+        msg: "{{ vault_ca_pem }}"
+    - debug:
+        msg:
+          - "oc_auth host: {{ oc_auth.openshift_auth.host }}"
+          - "manual api_url: {{ api_url }}"
+
+    - name: Create Kubernetes Secret for Vault CA
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: vault-cacert
+            namespace: openshift-operators
+          type: Opaque
+          data:
+            ca.crt: "{{ vault_ca_pem | b64encode }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+
+    - name: Apply VaultConnection CR
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: secrets.hashicorp.com/v1beta1
+          kind: VaultConnection
+          metadata:
+            name: default
+            namespace: openshift-operators
+          spec:
+            address: "{{ vault_addr }}"
+            tlsServerName: "{{ vault_addr | regex_replace('^https://','') | regex_replace(':8200','') }}"
+            caCertSecretRef: vault-cacert
+            skipTLSVerify: false
+
+    - name: Log out from OpenShift
+      community.okd.openshift_auth:
+        host: "{{ api_url }}"
+        state: absent
+        api_key: "{{ k8s_auth_api_key }}"
+        validate_certs: false
+      ignore_errors: true

@@ -12,6 +12,7 @@
   vars:
     #cluster_id: "{{ lookup('env', 'CLUSTER_ID') }}"
     vault_mount: "openshift-rosa-{{ cluster_id }}"
+    vault_path: "admin/{{ vault_mount }}/data/ocp"
     sa_namespace: "kube-system"
     sa_name: "tf-admin"
 
@@ -68,3 +69,22 @@
         api_key: "{{ k8s_auth_api_key }}"
         host: "{{ api_url }}"
         validate_certs: false
+        
+    - name: Write tf-admin token to Vault HCP
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ vault_path }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          data:
+            token: "{{ k8s_auth_api_key }}"
+      no_log: true
+      register: vault_write_result
+
+    - name: Confirm Vault write succeeded
+      ansible.builtin.debug:
+        msg: "Vault write completed with status {{ vault_write_result.status }}"
+      when: vault_write_result.status is defined

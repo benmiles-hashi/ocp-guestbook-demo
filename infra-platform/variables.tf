@@ -174,3 +174,16 @@ variable "repo_url" {
   description = "Git repo containing playbooks"
   default = "https://github.com/benmiles-hashi/ocp-guestbook-demo.git"
 }
+
+##--Kubernetes Engine Variables
+variable "sa_namespace" {
+  description = "Namespace where the tf-admin SA lives"
+  type        = string
+  default     = "kube-system"
+}
+
+variable "sa_name_prefix" {
+  description = "Prefix for the tf admin service account"
+  type        = string
+  default     = "tf-admin"
+}

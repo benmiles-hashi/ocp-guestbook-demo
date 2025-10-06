@@ -1,3 +1,9 @@
+
+resource "vault_token" "aap_job_token" {
+  policies = ["openshift-rosa-kv-write-${module.rosa_hcp.cluster_id}"]
+  ttl      = "5m"
+  renewable = false
+}
 data "aap_job_template" "tf_admin_sa" {
   name              = "OCP - TF Admin SA Setup"
   organization_name = "Default"
@@ -11,28 +17,18 @@ data "aap_job_template" "vso_operator_install" {
 resource "aap_job" "tf_admin_sa" {
   job_template_id = data.aap_job_template.tf_admin_sa.id
   extra_vars = jsonencode({
-    cluster_id      = "rosa-12345"
-    vault_addr      = "https://vault.example.com"
-    vault_token     = "s.xxxxxxx"
+    cluster_id      = module.rosa_hcp.cluster_id
+    vault_addr      = var.vault_address
+    vault_token     = vault_token.aap_job_token.client_token
     vault_namespace = "admin"
     sa_namespace    = "kube-system"
     sa_name         = "tf-admin"
   })
+  wait_for_completion = true
 }
 
-resource "aap_job" "vso_operator_install" {
-  job_template_id = data.aap_job_template.vso_operator_install.id
-  extra_vars = jsonencode({
-    cluster_id       = "rosa-12345"
-    vault_addr       = "https://vault.example.com"
-    vault_token      = "s.xxxxxxx"
-    vault_namespace  = "admin"
-    vault_mount      = "openshift-rosa-12345"
-    sub_namespace    = "openshift-operators"
-    operator_package = "vault-secrets-operator"
-    operator_channel = "stable"
-    catalog_source   = "certified-operators"
-    catalog_ns       = "openshift-marketplace"
-  })
+data "vault_kv_secret_v2" "ocp" {
+  mount = "openshift-rosa-${module.rosa_hcp.cluster_id}"
+  name  = "ocp"
+  depends_on = [ aap_job.tf_admin_sa ]
 }
-

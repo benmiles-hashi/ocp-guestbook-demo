@@ -60,12 +60,11 @@ locals {
 #    to create serviceaccount tokens (your cluster-admin SA token works).
 resource "vault_kubernetes_secret_backend" "config" {
 
-  path               = "kubernetes-admin-${var.cluster_id}"
-  description = "Kubernetes SA token factory for ROSA cluster ${var.cluster_id}"
-  kubernetes_host    = local.api_url
-  kubernetes_ca_cert = local.api_ca_pem
+  path                = "kubernetes-admin-${var.cluster_id}"
+  description         = "Kubernetes SA token factory for ROSA cluster ${var.cluster_id}"
+  kubernetes_host     = local.api_url
+  kubernetes_ca_cert  = local.api_ca_pem
   service_account_jwt = local.reviewer_jwt
-  # disable_local_ca_jwt = true  # not needed here; leave default
 }
 
 # 3) Role that mints short-lived SA tokens for your tf-admin-<cluster_id> SA

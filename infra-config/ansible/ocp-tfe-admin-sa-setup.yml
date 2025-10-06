@@ -69,7 +69,56 @@
         api_key: "{{ k8s_auth_api_key }}"
         host: "{{ api_url }}"
         validate_certs: false
-        
+    - name: Create Secret for SA token
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ sa_name }}-{{ cluster_id }}-token"
+            namespace: "{{ sa_namespace }}"
+            annotations:
+              kubernetes.io/service-account.name: "{{ sa_name }}-{{ cluster_id }}"
+          type: kubernetes.io/service-account-token
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+
+    - name: Wait for SA token secret to be populated
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Secret
+        name: "{{ sa_name }}-{{ cluster_id }}-token"
+        namespace: "{{ sa_namespace }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        host: "{{ api_url }}"
+        validate_certs: false
+      register: sa_secret
+      until: sa_secret.resources | length > 0 and (sa_secret.resources[0].data.token is defined)
+      retries: 10
+      delay: 6
+    - name: show ca cert
+      debug:
+        var: openshift_auth_results
+    - name: Extract SA token
+      set_fact:
+        sa_token: "{{ sa_secret.resources[0].data.token | b64decode }}"
+
+    - name: Get API server certificate chain
+      community.crypto.get_certificate:
+        host: "{{ rosa_secrets.data.data.api_url | regex_replace('^https://','') | regex_replace(':443','') }}"
+        port: 443
+        get_certificate_chain: true
+      register: api_server_cert
+
+    - name: Extract Vault CA PEM (skip leaf cert)
+      set_fact:
+        api_ca_pem: "{{ (api_server_cert.verified_chain | default([]))[1:] | join('') }}"
+    - name: show cert
+      debug:
+        var: api_ca_pem
+
     - name: Write tf-admin token to Vault HCP
       ansible.builtin.uri:
         url: "{{ vault_addr }}/v1/{{ vault_path }}"
@@ -81,6 +130,7 @@
         body:
           data:
             token: "{{ k8s_auth_api_key }}"
+            ca_cert: "{{ api_ca_pem }}"
       no_log: true
       register: vault_write_result
 

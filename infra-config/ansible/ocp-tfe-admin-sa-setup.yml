@@ -10,15 +10,15 @@
     - community.crypto
 
   vars:
-    cluster_id: "{{ lookup('env', 'CLUSTER_ID') }}"
+    #cluster_id: "{{ lookup('env', 'CLUSTER_ID') }}"
     vault_mount: "openshift-rosa-{{ cluster_id }}"
     sa_namespace: "kube-system"
     sa_name: "tf-admin"
 
     # These will be injected dynamically from AAP Vault credential
-    api_url: "{{ lookup('ansible.builtin.vars', 'vault_infra_api_url') }}"
-    ocp_username: "{{ lookup('ansible.builtin.vars', 'vault_infra_username') }}"
-    ocp_password: "{{ lookup('ansible.builtin.vars', 'vault_infra_password') }}"
+    #api_url: "{{ lookup('ansible.builtin.vars', 'vault_infra_api_url') }}"
+    ocp_username: "cluster-admin"
+    #ocp_password: "{{ lookup('ansible.builtin.vars', 'vault_infra_password') }}"
 
   tasks:
     - name: Log in to OpenShift

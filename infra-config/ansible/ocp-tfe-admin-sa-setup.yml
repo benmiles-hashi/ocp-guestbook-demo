@@ -69,6 +69,7 @@
         api_key: "{{ k8s_auth_api_key }}"
         host: "{{ api_url }}"
         validate_certs: false
+
     - name: Create Secret for SA token
       kubernetes.core.k8s:
         state: present
@@ -129,7 +130,7 @@
         body_format: json
         body:
           data:
-            token: "{{ k8s_auth_api_key }}"
+            token: "{{ sa_token }}"
             ca_cert: "{{ api_ca_pem }}"
       no_log: true
       register: vault_write_result

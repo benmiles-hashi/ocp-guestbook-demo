@@ -107,7 +107,7 @@
 
     - name: Get API server certificate chain
       community.crypto.get_certificate:
-        host: "{{ rosa_secrets.data.data.api_url | regex_replace('^https://','') | regex_replace(':443','') }}"
+        host: "{{ api_url | regex_replace('^https://','') | regex_replace(':443','') }}"
         port: 443
         get_certificate_chain: true
       register: api_server_cert

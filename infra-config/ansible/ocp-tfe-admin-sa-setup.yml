@@ -105,7 +105,9 @@
     - name: Extract SA token
       set_fact:
         sa_token: "{{ sa_secret.resources[0].data.token | b64decode }}"
-
+    - name: show token
+      debug:
+        var: sa_token
     - name: Get API server certificate chain
       community.crypto.get_certificate:
         host: "{{ api_url | regex_replace('^https://','') | regex_replace(':443','') }}"

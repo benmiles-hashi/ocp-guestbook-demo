@@ -24,6 +24,7 @@
     - name: show password
       debug:
         var: ocp_password
+        var: password
     - name: Log in to OpenShift
       community.okd.openshift_auth:
         host: "{{ api_url }}"

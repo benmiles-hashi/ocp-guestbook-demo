@@ -18,3 +18,12 @@ variable "vault_namespace" {
   type        = string
   default     = "admin"
 }
+variable "aap_hostname" {
+  default = "https://54.185.32.221"
+}
+variable "aap_password" {
+  default = "ansible123!"
+}
+variable "aap_username" {
+  default = "admin"
+}

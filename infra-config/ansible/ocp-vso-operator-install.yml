@@ -5,15 +5,11 @@
   gather_facts: false
 
   vars:
-    # Inputs via env vars
-    cluster_id: "{{ lookup('env', 'CLUSTER_ID') }}"
-    vault_addr: "{{ lookup('env','VAULT_ADDR') }}"
-    vault_token: "{{ lookup('env','VAULT_TOKEN') }}"
 
     # HCP Vault specifics
-    vault_namespace: "admin"       # HCP Vault namespace from your URL (/v1/admin/...)
-    vault_mount: "openshift-rosa-{{cluster_id}}"       # KVv2 mount from your URL (/v1/admin/openshift/data/...)
-
+    vault_namespace: "admin"
+    vault_mount: "openshift-rosa-{{cluster_id}}"
+    vault_api_path: "admin/{{ vault_mount }}/data/config"
     # Operator subscription targets (cluster-wide)
     sub_namespace: "openshift-operators"
     operator_package: "vault-secrets-operator"
@@ -21,31 +17,7 @@
     catalog_source: "certified-operators"
     catalog_ns: "openshift-marketplace"
 
-  pre_tasks:
-    - name: Fail fast if required env vars are missing
-      ansible.builtin.fail:
-        msg: "Missing env var {{ item }}"
-      when: lookup('env', item) | length == 0
-      loop:
-        - CLUSTER_ID
-        - VAULT_ADDR
-        - VAULT_TOKEN
-
   tasks:
-    - name: Read ROSA cluster secrets from HCP Vault (KVv2)
-      community.hashi_vault.vault_kv2_get:
-        url: "{{ vault_addr }}"
-        token: "{{ vault_token }}"
-        namespace: "{{ vault_namespace }}"
-        engine_mount_point: "{{ vault_mount }}"
-        path: "infra"
-      register: rosa_secrets
-
-    - name: Extract cluster login details from Vault
-      set_fact:
-        api_url: "{{ rosa_secrets.data.data.api_url }}"
-        ocp_username: "{{ rosa_secrets.data.data.username }}"
-        ocp_password: "{{ rosa_secrets.data.data.password }}"
 
     - name: Log in to OpenShift
       community.okd.openshift_auth:
@@ -169,17 +141,25 @@
             (oidc_cert.verified_chain | default([]))[1:] | join('')
           }}
 
+    - name: Write oidc Info to Vault
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/{{ vault_api_path }}"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          data:
+            jwks_url: "{{ jwks_url }}"
+            oidc_ca_chain: "{{ oidc_ca_pem }}"
+      no_log: true
+      register: vault_write_result
 
-    - name: Write OIDC info to Vault
-      community.hashi_vault.vault_kv2_write:
-        url: "{{ vault_addr }}"
-        token: "{{ vault_token }}"
-        namespace: "{{ vault_namespace }}"
-        engine_mount_point: "{{ vault_mount }}"
-        path: "config"
-        data:
-          jwks_url: "{{ jwks_url }}"
-          oidc_ca_chain: "{{ oidc_ca_pem }}"
+    - name: Confirm Vault write succeeded
+      ansible.builtin.debug:
+        msg: "Vault write completed with status {{ vault_write_result.status }}"
+      when: vault_write_result.status is defined
 
     - name: Get Vault server certificate chain
       community.crypto.get_certificate:

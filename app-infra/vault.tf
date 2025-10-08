@@ -43,9 +43,9 @@ path "${var.pki_mount}/issue/${var.team_name}" {
 EOT
 }
 resource "vault_policy" "kv_app" {
-  name   = "kv-${var.app_namespace}-${var.team_name}"
+  name   = "kv-${var.team_name}-${var.app_namespace}"
   policy = <<EOT
-path "${var.vault_kv_mount}/data/rosa/${var.cluster_id}/apps/${var.app_namespace}/${var.team_name}/*" {
+path "${local.vault_kv_mount}/apps/${var.team_name}/${var.app_namespace}/*" {
   capabilities = ["read", "create", "update"]
 }
 EOT
@@ -88,8 +88,8 @@ resource "vault_jwt_auth_backend_role" "app" {
 # Create test db variables
 ####
 resource "vault_kv_secret_v2" "app_static_db" {
-  mount = var.vault_kv_mount
-  name  = "rosa/${var.cluster_id}/apps/${var.app_namespace}/${var.team_name}/db_creds"
+  mount = local.vault_kv_mount
+  name  = "apps/${var.team_name}/${var.app_namespace}/db_creds"
 
   data_json = jsonencode({
     username    = var.database_username
@@ -98,8 +98,8 @@ resource "vault_kv_secret_v2" "app_static_db" {
 
 }
 resource "vault_kv_secret_v2" "app_kv" {
-  mount = var.vault_kv_mount
-  name  = "rosa/${var.cluster_id}/apps/${var.app_namespace}/${var.team_name}/secretdata"
+  mount = local.vault_kv_mount
+  name  = "apps/${var.team_name}/${var.app_namespace}/secretdata"
 
   data_json = jsonencode({
     message                 = "Hi.  I'm a vault secret"

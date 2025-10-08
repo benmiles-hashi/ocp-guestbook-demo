@@ -1,4 +1,10 @@
 terraform {
+  cloud {
+    organization = "ben-miles-org"
+    workspaces {
+      name = "ocp-app-infra"
+    }
+  }  
   required_providers {
     kubernetes = {
       source  = "hashicorp/kubernetes"
@@ -13,9 +19,8 @@ terraform {
 }
 
 provider "vault" {
-  # Expect VAULT_ADDR / VAULT_TOKEN envs; set namespace here:
   address = var.vault_address
-  token   = var.vault_token
+  token   = var.vault_root_token
   namespace = var.vault_namespace
 }
 

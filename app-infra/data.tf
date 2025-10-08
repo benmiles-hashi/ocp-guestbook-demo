@@ -1,16 +1,17 @@
 # Cluster infra: api_url, api_ca_pem (from your Ansible stage)
 data "vault_kv_secret_v2" "infra" {
-  mount = var.vault_kv_mount
-  name  = "rosa/${var.cluster_id}/infra"
+  mount = local.vault_kv_mount
+  name  = "infra"
 }
 
 # Vault-side paths for k8s engine/role (and optional jwt auth path)
 data "vault_kv_secret_v2" "vault_meta" {
-  mount = var.vault_kv_mount
-  name  = "rosa/${var.cluster_id}/vault"
+  mount = local.vault_kv_mount
+  name  = "vault"
 }
 
 locals {
+  vault_kv_mount   = "openshift-rosa-${var.cluster_id}"
   api_url          = data.vault_kv_secret_v2.infra.data["api_url"]
   api_ca_pem       = try(data.vault_kv_secret_v2.infra.data["api_ca_pem"], "")
   k8s_engine_path  = data.vault_kv_secret_v2.vault_meta.data["k8s_engine_path"]

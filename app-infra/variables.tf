@@ -5,19 +5,13 @@ variable "cluster_id" {
 variable "vault_address" {
   type=string
 }
-variable "vault_token" {
+variable "vault_root_token" {
   type=string
 }
 variable "vault_namespace" {
   description = "Vault namespace that holds KV and auth backends"
   type        = string
   default     = "admin"
-}
-
-variable "vault_kv_mount" {
-  description = "Vault KV v2 mount path where cluster metadata is stored"
-  type        = string
-  default     = "openshift"
 }
 
 variable "app_namespace" {

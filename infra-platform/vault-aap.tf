@@ -14,7 +14,7 @@ resource "vault_policy" "aap_vault_write" {
 
   policy = <<EOT
 path "openshift-rosa-${module.rosa_hcp.cluster_id}/*" {
-  capabilities = ["read", "list", "create"]
+  capabilities = ["read", "list", "create", "update"]
 }
 EOT
 }

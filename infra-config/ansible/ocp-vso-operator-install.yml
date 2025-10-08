@@ -153,7 +153,7 @@
           data:
             jwks_url: "{{ jwks_url }}"
             oidc_ca_chain: "{{ oidc_ca_pem }}"
-      no_log: true
+      no_log: false
       register: vault_write_result
 
     - name: Confirm Vault write succeeded

@@ -17,3 +17,9 @@ output "vault_entity_id" {
 output "pki_role_path" {
   value = "${var.pki_mount}/issue/${var.team_name}"
 }
+output "vault_jwt_auth_backend_role" {
+  value = vault_jwt_auth_backend_role.app.role_name
+}
+output "vault_database_secret_backend_role" {
+  value = vault_database_secret_backend_role.app1.name
+}

@@ -10,10 +10,9 @@ resource "kubernetes_manifest" "vault_auth" {
     "spec" = {
       "namespace" = var.vault_namespace
       "method" = "jwt"
-      # This must be the mount *path*, not "auth/<path>"
       "mount"  = local.jwt_auth_path
       "jwt" = {
-        "role"           = var.app_namespace         # we'll create a Vault JWT role with same name
+        "role"           = "${var.app_namespace}-role"
         "serviceAccount" = kubernetes_service_account.app_sa.metadata[0].name
       }
     }

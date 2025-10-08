@@ -45,7 +45,7 @@ EOT
 resource "vault_policy" "kv_app" {
   name   = "kv-${var.team_name}-${var.app_namespace}"
   policy = <<EOT
-path "${local.vault_kv_mount}/apps/${var.team_name}/${var.app_namespace}/*" {
+path "${local.vault_kv_mount}/data/apps/${var.team_name}/${var.app_namespace}/*" {
   capabilities = ["read", "create", "update"]
 }
 EOT
@@ -62,7 +62,7 @@ EOT
 # JWT role for the app namespace/serviceaccount
 resource "vault_jwt_auth_backend_role" "app" {
   backend         = local.jwt_auth_path
-  role_name       = var.app_namespace
+  role_name       = "${var.app_namespace}-role"
   role_type       = "jwt"
 
   # OpenShift/K8s default audience for projected SA tokens

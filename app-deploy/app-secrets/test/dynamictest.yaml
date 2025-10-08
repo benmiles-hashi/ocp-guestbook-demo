@@ -2,14 +2,14 @@ apiVersion: secrets.hashicorp.com/v1beta1
 kind: VaultDynamicSecret
 metadata:
   name: db-creds-rds-admin
-  namespace: app-2
+  namespace: guestbook
 spec:
   vaultAuthRef: vault-auth
   namespace: admin
-  mount: rosa-2lit29efhda2oils244c820lep0sgg5m-database
-  path: creds/rds-admin
+  mount: rosa-2lmrnpuovoqc2bog8i3vfvts97ug59em-database
+  path: creds/guestbook-role
   type: database
-  role: app-2
+  role: guestbook-role
   destination:
     create: true
     name: db-creds-rds-admin

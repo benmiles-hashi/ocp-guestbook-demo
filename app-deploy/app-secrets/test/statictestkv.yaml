@@ -1,0 +1,17 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: kv-secretdata
+  namespace: guestbook
+spec:
+  vaultAuthRef: vault-auth
+  namespace: admin
+  mount: openshift-rosa-2lmrnpuovoqc2bog8i3vfvts97ug59em
+  path: apps/team-b/guestbook/secretdata
+  type: kv-v2
+  role: guestbook-role
+  destination:
+    create: true
+    name: kv-secretdata
+    type: Opaque
+  refreshAfter: 5m

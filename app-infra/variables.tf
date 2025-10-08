@@ -17,7 +17,6 @@ variable "vault_namespace" {
 variable "app_namespace" {
   description = "Kubernetes namespace (project) for the app"
   type        = string
-  default     = "app-2"
 }
 
 variable "sa_name" {
@@ -34,7 +33,6 @@ variable "database_password" {
 variable "team_name" {
   description = "Logical team name for PKI role binding"
   type        = string
-  default     = "team-b"
 }
 
 variable "pki_mount" {
@@ -46,7 +44,6 @@ variable "pki_mount" {
 variable "pki_allowed_domain" {
   description = "Base DNS domain for the team’s PKI role (e.g., tenant-1.example.com)"
   type        = string
-  default     = "tenant-1.example.com"
 }
 
 variable "jwt_bound_audiences" {

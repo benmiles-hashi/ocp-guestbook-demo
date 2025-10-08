@@ -192,8 +192,8 @@
           data:
             ca.crt: "{{ vault_ca_pem | b64encode }}"
         host: "{{ api_url }}"
+        api_key: "{{ k8s_auth_api_key }}"
         validate_certs: false
-
 
     - name: Apply VaultConnection CR
       kubernetes.core.k8s:
@@ -209,6 +209,10 @@
             tlsServerName: "{{ vault_addr | regex_replace('^https://','') | regex_replace(':8200','') }}"
             caCertSecretRef: vault-cacert
             skipTLSVerify: false
+        host: "{{ api_url }}"
+        api_key: "{{ k8s_auth_api_key }}"
+        validate_certs: false
+
 
     - name: Log out from OpenShift
       community.okd.openshift_auth:

@@ -14,6 +14,10 @@ terraform {
       source  = "hashicorp/vault"
       version = ">= 4.2.0"
     }
+    mysql = {
+      source  = "petoju/mysql"
+      version = ">= 3.0"
+    }
   }
   required_version = ">= 1.5.0"
 }

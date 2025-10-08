@@ -115,9 +115,8 @@ resource "vault_database_secret_backend_role" "app1" {
   db_name = "rosa-${var.cluster_id}-rds-mysql"
 
   creation_statements = [
-    "CREATE DATABASE IF NOT EXISTS `${var.app_namespace}`",
     "CREATE USER '{{name}}'@'%' IDENTIFIED WITH mysql_native_password BY '{{password}}';",
-    "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP ON `${var.app_namespace}`.* TO '{{name}}'@'%';"
+    "GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP ON `${local.database_schema_name}`.* TO '{{name}}'@'%';"
   ]
   revocation_statements = [
     "DROP USER IF EXISTS '{{name}}'@'%';"

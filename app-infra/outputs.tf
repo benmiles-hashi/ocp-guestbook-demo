@@ -23,3 +23,9 @@ output "vault_jwt_auth_backend_role" {
 output "vault_database_secret_backend_role" {
   value = vault_database_secret_backend_role.app1.name
 }
+output "database_host" {
+  value = nonsensitive("${local.database_host}:${local.database_port}")
+}
+output "database_engine" {
+  value = vault_database_secret_backend_role.app1.backend
+}

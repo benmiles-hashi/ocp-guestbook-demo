@@ -9,6 +9,11 @@ data "vault_kv_secret_v2" "vault_meta" {
   mount = local.vault_kv_mount
   name  = "vault"
 }
+data "vault_kv_secret_v2" "rds" {
+  mount = local.vault_kv_mount
+  name  = "rds"
+  
+}
 
 locals {
   vault_kv_mount   = "openshift-rosa-${var.cluster_id}"
@@ -16,6 +21,9 @@ locals {
   api_ca_pem       = try(data.vault_kv_secret_v2.infra.data["api_ca_pem"], "")
   k8s_engine_path  = data.vault_kv_secret_v2.vault_meta.data["k8s_engine_path"]
   k8s_role_name    = data.vault_kv_secret_v2.vault_meta.data["k8s_role"]
+  database_host    = data.vault_kv_secret_v2.rds.data["host"]
+  database_port    = data.vault_kv_secret_v2.rds.data["port"]
+  database_schema_name = try(var.database_schema_name, var.app_namespace)
   jwt_aud = try(
     format("https://%s", data.vault_kv_secret_v2.infra.data["oidc_endpoint_url"]),
     "https://kubernetes.default.svc"

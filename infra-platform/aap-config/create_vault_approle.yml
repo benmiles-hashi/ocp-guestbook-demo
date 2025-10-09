@@ -37,3 +37,34 @@
           secret_id: "{{ vault_secret_id }}"
           api_version: "v2"
         state: present
+        
+    - name: Create custom credential type for OpenShift API
+      ansible.controller.credential_type:
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: "{{ controller_validate_certs }}"
+        name: "OpenShift API Credential"
+        description: "Holds OCP API credentials pulled dynamically from Vault"
+        kind: cloud
+        inputs:
+          fields:
+            - id: api_url
+              type: string
+              label: OCP API URL
+              secret: true
+            - id: ocp_username
+              type: string
+              label: OCP Username
+              secret: true
+            - id: ocp_password
+              type: string
+              label: OCP Password
+              secret: true
+        injectors:
+          extra_vars:
+            api_url: '{{ api_url }}'
+            ocp_username: '{{ ocp_username }}'
+            ocp_password: '{{ ocp_password }}'
+        state: present
+

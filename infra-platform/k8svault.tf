@@ -1,7 +1,7 @@
 
 locals {
   reviewer_jwt = data.vault_kv_secret_v2.ocp.data["token"]
-  api_ca_pem  = try(data.vault_kv_secret_v2.ocp.data["ca_cert"], "")
+  api_ca_pem  = data.vault_kv_secret_v2.ocp.data["ca_cert"]
   mount_path = "openshift-rosa-${module.rosa_hcp.cluster_id}"
 }
 

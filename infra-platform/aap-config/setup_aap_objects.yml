@@ -22,26 +22,7 @@
     inventory_name: "Localhost Inventory"
 
   tasks:
-    - name: Create Vault AppRole credential (built-in HashiCorp Vault Secret Lookup)
-      ansible.controller.credential:
-        controller_host: "{{ controller_host }}"
-        controller_username: "{{ controller_username }}"
-        controller_password: "{{ controller_password }}"
-        validate_certs: "{{ controller_validate_certs }}"
-        name: "Vault AppRole Credential"
-        description: "AppRole authentication for connecting AAP to Vault via env vars"
-        organization: "{{ organization }}"
-        credential_type: "HashiCorp Vault Secret Lookup"
-        inputs:
-          url: "{{ lookup('env', 'VAULT_ADDR') }}"
-          namespace: "{{ lookup('env', 'VAULT_NAMESPACE') | default('admin', true) }}"
-          default_auth_path: "approle"
-          role_id: "{{ lookup('env', 'VAULT_ROLE_ID') }}"
-          secret_id: "{{ lookup('env', 'VAULT_SECRET_ID') }}"
-          api_version: "v2"
-        state: present
-
-
+  
     - name: Ensure Project exists
       ansible.controller.project:
         controller_host: "{{ controller_host }}"
@@ -80,6 +61,31 @@
             hosts:
               localhost:
                 ansible_connection: local
+        state: present
+    - name: Create job template for Vault Credential Setup
+      ansible.controller.job_template:
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: "{{ controller_validate_certs }}"
+        name: "OCP - Vault Credential Setup"
+        description: "Creates approle connection to HashiCorp Vault"
+        organization: "{{ organization }}"
+        project: "{{ project_name }}"
+        inventory: "{{ inventory_name }}"
+        playbook: "infra-platoform/aap-config/create_vault_approle.yml"
+        job_type: run
+        ask_variables_on_launch: true
+        extra_vars:
+          controller_host: ""
+          controller_username: "admin"
+          controller_password: ""
+          controller_validate_certs: false
+          vault_addr: ""
+          vault_namespace: "admin"
+          vault_role_id: ""
+          vault_secret_id: ""
+          organization: "Default"
         state: present
 
     - name: Create job template for TF Admin SA Setup

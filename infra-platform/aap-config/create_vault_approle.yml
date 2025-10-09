@@ -128,34 +128,19 @@
           secret_key: "password"
         state: present
 
-    - name: Read Job Template info
-      ansible.controller.job_template_info:
-        controller_host: "{{ controller_host }}"
-        controller_username: "{{ controller_username }}"
-        controller_password: "{{ controller_password }}"
-        validate_certs: "{{ controller_validate_certs }}"
-        name: "{{ item }}"
-      loop:
-        - "OCP - TF Admin SA Setup"
-        - "OCP - VSO Operator Install"
-      register: jt_infos
-
-    - name: Merge and update credentials on each JT
+    - name: Attach credential on Job Templates
       ansible.controller.job_template:
         controller_host: "{{ controller_host }}"
         controller_username: "{{ controller_username }}"
         controller_password: "{{ controller_password }}"
         validate_certs: "{{ controller_validate_certs }}"
-        name: "{{ item.resources[0].name }}"
+        name: "{{ item }}"
+        organization: "{{ organization }}"
         state: present
-        # Merge existing credential NAMES with our new one
-        credentials: >-
-          {{
-            (
-              (item.resources[0].related.credentials | default([]))
-              | map(attribute='name') | list
-            )
-            | union(['OpenShift Infra Credential'])
-          }}
-      loop: "{{ jt_infos.results }}"
+        credentials:
+          - "OpenShift Infra Credential"
+      loop:
+        - "OCP - TF Admin SA Setup"
+        - "OCP - VSO Operator Install"
+
 

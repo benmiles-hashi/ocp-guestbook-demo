@@ -1,7 +1,7 @@
 
 resource "vault_token" "aap_job_token" {
   policies = ["openshift-rosa-kv-write-${module.rosa_hcp.cluster_id}"]
-  ttl      = "5m"
+  ttl      = "1h"
   renewable = false
 }
 data "aap_job_template" "tf_admin_sa" {

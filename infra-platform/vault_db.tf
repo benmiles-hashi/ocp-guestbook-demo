@@ -22,7 +22,7 @@ resource "vault_mount" "db" {
 # Connection for RDS
 resource "vault_database_secret_backend_connection" "rds" {
   backend       = vault_mount.db.path
-  name          = "rosa-${module.rosa_hcp.cluster_id}-rds-mysql"
+  name          = "rds-mysql-${aws_db_instance.demo.id}"
   allowed_roles = ["*"]
 
   mysql {

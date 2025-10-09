@@ -30,7 +30,6 @@ resource "aap_job" "vault_credential" {
     vault_secret_id       = vault_approle_auth_backend_role_secret_id.aap_controller.secret_id
   })
   wait_for_completion = true
-  depends_on = [ vault_approle_auth_backend_role.aap_controller ]
 }
 
 resource "aap_job" "tf_admin_sa" {

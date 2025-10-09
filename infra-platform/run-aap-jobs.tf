@@ -29,7 +29,7 @@ resource "aap_job" "vault_credential" {
     vault_role_id         = data.vault_approle_auth_backend_role_id.aap_controller.role_id
     vault_secret_id       = vault_approle_auth_backend_role_secret_id.aap_controller.secret_id
   })
-  wait_for_completion = false
+  wait_for_completion = true
   depends_on = [ vault_approle_auth_backend_role.aap_controller ]
 }
 
@@ -44,6 +44,7 @@ resource "aap_job" "tf_admin_sa" {
     sa_name         = "tf-admin"
   })
   wait_for_completion = true
+  depends_on = [ aap_job.vault_credential ]
 }
 
 data "vault_kv_secret_v2" "ocp" {

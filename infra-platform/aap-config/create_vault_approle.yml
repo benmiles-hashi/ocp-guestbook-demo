@@ -83,13 +83,16 @@
         credential_type: "OpenShift API Credential"
         inputs:
           api_url:
-            secret_path: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13/infra"
+            secret_backend: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13"
+            secret_path: "infra"
             secret_key: "api_url"
           ocp_username:
-            secret_path: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13/infra"
+            secret_backend: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13"
+            secret_path: "infra"
             secret_key: "username"
           ocp_password:
-            secret_path: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13/infra"
+            secret_backend: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13"
+            secret_path: "infra"
             secret_key: "password"
         vault_credential: "Vault AppRole Credential"
         state: present

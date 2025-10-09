@@ -7,7 +7,7 @@
     - ansible.controller
 
   vars:
-    cluster_id: "2lqa9j38r9v3o591vgult7s92o1hca13"
+    cluster_id: ""
     controller_host: ""
     controller_username: "admin"
     controller_password: "ansible123!"
@@ -128,3 +128,15 @@
           secret_key: "password"
         state: present
 
+    - name: Attach OpenShift Infra Credential to the Job Templates
+      ansible.controller.job_template_credential:
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: "{{ controller_validate_certs }}"
+        job_template: "{{ item }}"
+        credential: "OpenShift Infra Credential"
+        state: present
+      loop:
+        - "OCP - TF Admin SA Setup"
+        - "OCP - VSO Operator Install"

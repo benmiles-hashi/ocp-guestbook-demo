@@ -3,7 +3,6 @@
   hosts: localhost
   connection: local
   gather_facts: false
-
   collections:
     - ansible.controller
 
@@ -37,7 +36,7 @@
           secret_id: "{{ vault_secret_id }}"
           api_version: "v2"
         state: present
-        
+
     - name: Create custom credential type for OpenShift API
       ansible.controller.credential_type:
         controller_host: "{{ controller_host }}"
@@ -61,10 +60,14 @@
               type: string
               label: OCP Password
               secret: true
+          required:
+            - api_url
+            - ocp_username
+            - ocp_password
         injectors:
           extra_vars:
-            api_url: '{{ api_url }}'
-            ocp_username: '{{ ocp_username }}'
-            ocp_password: '{{ ocp_password }}'
+            api_url: !unsafe "{{ api_url }}"
+            ocp_username: !unsafe "{{ ocp_username }}"
+            ocp_password: !unsafe "{{ ocp_password }}"
         state: present
 

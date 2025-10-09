@@ -73,7 +73,7 @@
         organization: "{{ organization }}"
         project: "{{ project_name }}"
         inventory: "{{ inventory_name }}"
-        playbook: "infra-platoform/aap-config/create_vault_approle.yml"
+        playbook: "infra-platform/aap-config/create_vault_approle.yml"
         job_type: run
         ask_variables_on_launch: true
         extra_vars:

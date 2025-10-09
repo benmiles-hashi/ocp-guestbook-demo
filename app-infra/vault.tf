@@ -109,10 +109,11 @@ resource "vault_kv_secret_v2" "app_kv" {
 }
 
 ###DB Role
+
 resource "vault_database_secret_backend_role" "app1" {
   backend = "rosa-${var.cluster_id}-database"
   name    = "${var.app_namespace}-role"
-  db_name = "rosa-${var.cluster_id}-rds-mysql"
+  db_name = "rds-mysql-connection"
 
   creation_statements = [
     "CREATE USER '{{name}}'@'%' IDENTIFIED WITH mysql_native_password BY '{{password}}';",

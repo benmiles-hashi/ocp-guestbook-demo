@@ -22,7 +22,7 @@ resource "vault_mount" "db" {
 # Connection for RDS
 resource "vault_database_secret_backend_connection" "rds" {
   backend       = vault_mount.db.path
-  name          = "rds-mysql-${aws_db_instance.demo.id}"
+  name          = "rds-mysql-connection"
   allowed_roles = ["*"]
 
   mysql {

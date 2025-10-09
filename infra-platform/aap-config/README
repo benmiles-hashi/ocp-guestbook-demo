@@ -1,6 +1,9 @@
+This is a pre-req.  Run this local to prep your AAP server with the necessary job templates to complete the OCP and Vault runs.
+
 configures AAP project, inventory, and job_temples for:
   ocp-tfe-admin-sa-setup.yml 
   ocp-vso-operator-install.yml
+  create_vault_approle.yml
 
 use:
 source aap-env.env

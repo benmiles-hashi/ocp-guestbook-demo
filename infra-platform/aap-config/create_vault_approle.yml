@@ -7,6 +7,7 @@
     - ansible.controller
 
   vars:
+    cluster_id: "2lqa9j38r9v3o591vgult7s92o1hca13"
     controller_host: ""
     controller_username: "admin"
     controller_password: "ansible123!"
@@ -93,8 +94,7 @@
         input_field_name: "api_url"
         source_credential: "Vault AppRole Credential"         # the external credential you created earlier
         metadata:
-          secret_backend: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13"  # KV mount name
-          secret_path: "infra"                                               # path under the mount
+          secret_path: "openshift-rosa-{{ cluster_id }}/infra"                                               # path under the mount
           secret_key: "api_url"                                              # key in KV
           # auth_path: "approle-aap"     # optional override (uses default_auth_path from source cred)
           # secret_version: 0            # optional for KV v2
@@ -110,8 +110,7 @@
         input_field_name: "ocp_username"
         source_credential: "Vault AppRole Credential"
         metadata:
-          secret_backend: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13"
-          secret_path: "infra"
+          secret_path: "openshift-rosa-{{ cluster_id }}/infra"
           secret_key: "username"
         state: present
 
@@ -125,8 +124,7 @@
         input_field_name: "ocp_password"
         source_credential: "Vault AppRole Credential"
         metadata:
-          secret_backend: "openshift-rosa-2lqa9j38r9v3o591vgult7s92o1hca13"
-          secret_path: "infra"
+          secret_path: "openshift-rosa-{{ cluster_id }}/infra"
           secret_key: "password"
         state: present
 

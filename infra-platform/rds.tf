@@ -48,6 +48,7 @@ resource "aws_db_instance" "demo" {
 resource "random_password" "rds" {
   length  = 20
   special = true
+  override_special = "!#$%^&*()-_=+[]{}<>?:"
 }
 
 output "rds_endpoint" {

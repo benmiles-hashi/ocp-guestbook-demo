@@ -1,0 +1,107 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    sn_base: "https://service-now.com"
+    client_id: ""
+    client_secret: ""
+
+    varset_name: "Ben OCP Infra Variables"
+    varset_description: "Common variables for Ben"
+    catalog_item_name: "Guestbook Provisioning"
+
+  tasks:
+    - name: Get OAuth access token (client credentials)
+      uri:
+        url: "{{ sn_base }}/oauth_token.do"
+        method: POST
+        headers:
+          Content-Type: application/x-www-form-urlencoded
+          Accept: application/json
+        body: "grant_type=client_credentials&client_id={{ client_id }}&client_secret={{ client_secret }}"
+        status_code: 200
+        return_content: true
+      register: oauth
+
+    - name: Fail if token not returned
+      fail:
+        msg: "OAuth token request failed: {{ oauth.json | default(oauth.content) }}"
+      when: oauth.json.access_token is not defined
+
+    - name: Ensure Variable Set exists (GET by name)
+      uri:
+        url: "{{ sn_base }}/api/now/table/item_option_new_set?sysparm_query=name={{ varset_name | urlencode }}&sysparm_limit=1"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ oauth.json.access_token }}"
+          Accept: application/json
+        return_content: true
+        status_code: 200
+      register: get_varset
+
+    - name: Create Variable Set if missing (POST)
+      uri:
+        url: "{{ sn_base }}/api/now/table/item_option_new_set"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ oauth.json.access_token }}"
+          Accept: application/json
+          Content-Type: application/json
+        body_format: json
+        body:
+          name: "{{ varset_name }}"
+          description: "{{ varset_description }}"
+          active: "true"
+        status_code: [200,201]
+      register: created_varset
+      when: (get_varset.json.result | default([]) | length) == 0
+
+    - name: Capture varset sys_id
+      set_fact:
+        varset_sys_id: >-
+          {{
+            (get_varset.json.result[0].sys_id)
+            if (get_varset.json.result | default([]) | length) > 0
+            else created_varset.json.result.sys_id
+          }}
+
+    - name: Find Catalog Item by name
+      uri:
+        url: "{{ sn_base }}/api/now/table/sc_cat_item?sysparm_query=name={{ catalog_item_name | urlencode }}&sysparm_limit=1"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ oauth.json.access_token }}"
+          Accept: application/json
+        return_content: true
+        status_code: 200
+      register: item_get
+
+    - name: Ensure MTOM link exists (attach varset to item)
+      block:
+        - name: Check existing link
+          uri:
+            url: "{{ sn_base }}/api/now/table/sc_cat_item_variable_set_mtom?sysparm_query=variable_set={{ varset_sys_id }}^sc_cat_item={{ item_get.json.result[0].sys_id }}&sysparm_limit=1"
+            method: GET
+            headers:
+              Authorization: "Bearer {{ oauth.json.access_token }}"
+              Accept: application/json
+            return_content: true
+            status_code: 200
+          register: link_get
+
+        - name: Create link if missing
+          uri:
+            url: "{{ sn_base }}/api/now/table/sc_cat_item_variable_set_mtom"
+            method: POST
+            headers:
+              Authorization: "Bearer {{ oauth.json.access_token }}"
+              Accept: application/json
+              Content-Type: application/json
+            body_format: json
+            body:
+              variable_set: "{{ varset_sys_id }}"
+              sc_cat_item: "{{ item_get.json.result[0].sys_id }}"
+            status_code: [200,201]
+          when: (link_get.json.result | default([]) | length) == 0
+      when: (item_get.json.result | default([]) | length) > 0

@@ -23,7 +23,7 @@ locals {
   k8s_role_name    = data.vault_kv_secret_v2.vault_meta.data["k8s_role"]
   database_host    = data.vault_kv_secret_v2.rds.data["host"]
   database_port    = data.vault_kv_secret_v2.rds.data["port"]
-  database_schema_name = try(var.database_schema_name, var.app_namespace)
+  database_schema_name = var.database_schema_name
   jwt_aud = try(
     format("https://%s", data.vault_kv_secret_v2.infra.data["oidc_endpoint_url"]),
     "https://kubernetes.default.svc"

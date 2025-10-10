@@ -32,7 +32,6 @@ variable "database_password" {
 }
 variable "database_schema_name" {
   type= string
-  default = null
 }
 variable "team_name" {
   description = "Logical team name for PKI role binding"

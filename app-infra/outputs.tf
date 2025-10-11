@@ -39,5 +39,5 @@ output "pki_common_name" {
   value = "${var.app_namespace}.${var.pki_allowed_domain}"
 }
 output "app_route" {
-  value = nonsensitive(replace(replace(local.api_url, "https://api", "${var.app_namespace}.app"), ":443", ""))
+  value = nonsensitive(replace(replace(local.api_url, "api", "${var.app_namespace}.apps.rosa"), ":443", ""))
 }

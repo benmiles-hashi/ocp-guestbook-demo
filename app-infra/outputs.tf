@@ -39,5 +39,5 @@ output "pki_common_name" {
   value = "${var.app_namespace}.${var.pki_allowed_domain}"
 }
 output "app_route" {
-  value = replace(local.api_url, "api", "${var.app_namespace}.app")
+  value = nonsensitive(replace(local.api_url, "api", "${var.app_namespace}.app"))
 }

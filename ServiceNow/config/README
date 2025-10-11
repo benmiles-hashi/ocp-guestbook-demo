@@ -1,0 +1,20 @@
+For Snow automation, create an OAUTH registry entry:
+
+    Create an OAuth API endpoint for external clients
+
+1. If using postman to get token:  use this redirect URL: 
+    https://oauth.pstmn.io/v1/callback
+2. uncheck pulbic client
+3. Client Type: Integration as a Service
+4. Auth Scope: useraccount
+
+In Postman:
+Grant type: Authorization Token
+Callback URL:  https://oauth.pstmn.io/v1/callback or check the box for authorize in header
+Auth URL:  https://<instance>.service-now.com/oauth_auth.do
+Access Token URL: https://<instance>.service-now.com/oauth_token.do
+Client ID:  ••••••••••••••••••••••••••••••••
+Client Secret: ••••••••••
+Scope: useraccount
+State: benstate
+Client Authentication: Send as Basic Auth

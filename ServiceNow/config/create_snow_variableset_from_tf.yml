@@ -1,0 +1,88 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    sn_base: "https://ven07381.service-now.com"
+    oauth_token: "{{ lookup('env', 'oauth_token') }}"
+    varset_name: "Terraform Auto Variables"
+    varset_description: "Auto-generated from variables.tf and terraform.tfvars"
+
+    variables_hcl: "{{ lookup('community.general.hcl', '../../infra-platform/variables.tf') }}"
+    tfvars_hcl: "{{ lookup('community.general.hcl', '../../infra-platform/terraform.tfvars') }}"
+
+  tasks:
+
+    - name: Ensure Variable Set exists (GET by name)
+      uri:
+        url: "{{ sn_base }}/api/now/table/item_option_new_set?sysparm_query=name={{ varset_name | urlencode }}&sysparm_limit=1"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ oauth_token }}"
+          Accept: application/json
+        return_content: true
+        status_code: 200
+      register: get_varset
+
+    - name: Create Variable Set if missing
+      uri:
+        url: "{{ sn_base }}/api/now/table/item_option_new_set"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ oauth_token }}"
+          Accept: application/json
+          Content-Type: application/json
+        body_format: json
+        body:
+          name: "{{ varset_name }}"
+          description: "{{ varset_description }}"
+          active: "true"
+        status_code: [200,201]
+      register: created_varset
+      when: (get_varset.json.result | default([]) | length) == 0
+
+    - name: Capture varset sys_id
+      set_fact:
+        varset_sys_id: >-
+          {{
+            (get_varset.json.result[0].sys_id)
+            if (get_varset.json.result | default([]) | length) > 0
+            else created_varset.json.result.sys_id
+          }}
+
+    - name: Initialize merged list
+      set_fact:
+        merged_variables: []
+
+    - name: Merge each variable with tfvars
+      set_fact:
+        merged_variables: "{{ merged_variables + [ {
+          'name': 'tf_var_' + item.key,
+          'question_text': item.value.description | default(item.key),
+          'type': item.value.type | default('string'),
+          'default_value': tfvars_hcl[item.key] | default(item.value.default | default(omit))
+        } ] }}"
+      loop: "{{ variables_hcl | dict2items }}"
+
+
+    - name: Create variables in ServiceNow
+      uri:
+        url: "{{ sn_base }}/api/now/table/item_option_new"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ oauth_token }}"
+          Accept: application/json
+          Content-Type: application/json
+        body_format: json
+        body:
+          name: "{{ item.name }}"
+          question_text: "{{ item.question_text }}"
+          type: "{{ item.type }}"
+          default_value: "{{ item.default_value | default(omit) }}"
+          variable_set: "{{ varset_sys_id }}"
+        loop: "{{ merged_variables | list }}"
+        status_code: [200,201]
+      register: created_variables
+
+    - debug:
+        msg: "✅ Created {{ created_variables.results | length }} variables from variables.tf into {{ varset_name }}"

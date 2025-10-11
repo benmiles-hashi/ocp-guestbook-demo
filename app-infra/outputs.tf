@@ -29,3 +29,15 @@ output "database_host" {
 output "database_engine" {
   value = vault_database_secret_backend_role.app1.backend
 }
+output "secret_engine_mount" {
+  value = "openshift-rosa-${var.cluster_id}"
+}
+output "secret_engine_path" {
+  value = "apps/${var.team_name}/${var.app_namespace}/secretdata"
+}
+output "pki_common_name" {
+  value = "${var.app_namespace}.${var.pki_allowed_domain}"
+}
+output "app_route" {
+  value = replace(local.api_url, "api", "${var.app_namespace}.app")
+}

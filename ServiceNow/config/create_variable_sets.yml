@@ -3,38 +3,70 @@
   gather_facts: false
 
   vars:
-    sn_base: "https://service-now.com"
-    client_id: ""
-    client_secret: ""
-
+    sn_base: "https://ven07381.service-now.com"
+    oauth_token: "{{ lookup('env', 'oauth_token') }}"
     varset_name: "Ben OCP Infra Variables"
     varset_description: "Common variables for Ben"
-    catalog_item_name: "Guestbook Provisioning"
+
+    # Define static Terraform variables here
+    tf_variables:
+      - name: "tf_var_cluster_id"
+        question_text: "ROSA cluster ID (not the OIDC ID)"
+        type: "string"
+        mandatory: true
+      - name: "tf_var_vault_address"
+        question_text: "Vault address"
+        type: "string"
+      - name: "tf_var_vault_root_token"
+        question_text: "Vault root token"
+        type: "string"
+        mask_type: "password"
+      - name: "tf_var_vault_namespace"
+        question_text: "Vault namespace that holds KV and auth backends"
+        type: "string"
+        default_value: "admin"
+      - name: "tf_var_app_namespace"
+        question_text: "Kubernetes namespace (project) for the app"
+        type: "string"
+      - name: "tf_var_sa_name"
+        question_text: "ServiceAccount name for the app"
+        type: "string"
+        default_value: "my-app"
+      - name: "tf_var_database_username"
+        question_text: "Database username"
+        type: "string"
+        default_value: "admin"
+      - name: "tf_var_database_password"
+        question_text: "Database password"
+        type: "string"
+        mask_type: "password"
+        mandatory: true
+      - name: "tf_var_database_schema_name"
+        question_text: "Database schema name"
+        type: "string"
+      - name: "tf_var_team_name"
+        question_text: "Logical team name for PKI role binding"
+        type: "string"
+      - name: "tf_var_pki_mount"
+        question_text: "Existing Vault PKI mount to issue certs from (intermediate)"
+        type: "string"
+        default_value: "pki_int"
+      - name: "tf_var_pki_allowed_domain"
+        question_text: "Base DNS domain for the team’s PKI role (e.g., tenant-1.example.com)"
+        type: "string"
+      - name: "tf_var_jwt_bound_audiences"
+        question_text: "Audiences accepted by Vault JWT role (VSO uses k8s default)"
+        type: "string"
+        default_value: "https://kubernetes.default.svc"
 
   tasks:
-    - name: Get OAuth access token (client credentials)
-      uri:
-        url: "{{ sn_base }}/oauth_token.do"
-        method: POST
-        headers:
-          Content-Type: application/x-www-form-urlencoded
-          Accept: application/json
-        body: "grant_type=client_credentials&client_id={{ client_id }}&client_secret={{ client_secret }}"
-        status_code: 200
-        return_content: true
-      register: oauth
-
-    - name: Fail if token not returned
-      fail:
-        msg: "OAuth token request failed: {{ oauth.json | default(oauth.content) }}"
-      when: oauth.json.access_token is not defined
 
     - name: Ensure Variable Set exists (GET by name)
       uri:
         url: "{{ sn_base }}/api/now/table/item_option_new_set?sysparm_query=name={{ varset_name | urlencode }}&sysparm_limit=1"
         method: GET
         headers:
-          Authorization: "Bearer {{ oauth.json.access_token }}"
+          Authorization: "Bearer {{ oauth_token }}"
           Accept: application/json
         return_content: true
         status_code: 200
@@ -45,7 +77,7 @@
         url: "{{ sn_base }}/api/now/table/item_option_new_set"
         method: POST
         headers:
-          Authorization: "Bearer {{ oauth.json.access_token }}"
+          Authorization: "Bearer {{ oauth_token }}"
           Accept: application/json
           Content-Type: application/json
         body_format: json
@@ -66,42 +98,26 @@
             else created_varset.json.result.sys_id
           }}
 
-    - name: Find Catalog Item by name
+    - name: Create Terraform variables for this set
       uri:
-        url: "{{ sn_base }}/api/now/table/sc_cat_item?sysparm_query=name={{ catalog_item_name | urlencode }}&sysparm_limit=1"
-        method: GET
+        url: "{{ sn_base }}/api/now/table/item_option_new"
+        method: POST
         headers:
-          Authorization: "Bearer {{ oauth.json.access_token }}"
+          Authorization: "Bearer {{ oauth_token }}"
           Accept: application/json
-        return_content: true
-        status_code: 200
-      register: item_get
+          Content-Type: application/json
+        body_format: json
+        body:
+          name: "{{ item.name }}"
+          question_text: "{{ item.question_text }}"
+          type: "{{ item.type }}"
+          default_value: "{{ item.default_value | default(omit) }}"
+          mask_type: "{{ item.mask_type | default(omit) }}"
+          mandatory: "{{ item.mandatory | default(false) }}"
+          variable_set: "{{ varset_sys_id }}"
+        status_code: [200,201]
+      loop: "{{ tf_variables }}"
+      register: created_variables
 
-    - name: Ensure MTOM link exists (attach varset to item)
-      block:
-        - name: Check existing link
-          uri:
-            url: "{{ sn_base }}/api/now/table/sc_cat_item_variable_set_mtom?sysparm_query=variable_set={{ varset_sys_id }}^sc_cat_item={{ item_get.json.result[0].sys_id }}&sysparm_limit=1"
-            method: GET
-            headers:
-              Authorization: "Bearer {{ oauth.json.access_token }}"
-              Accept: application/json
-            return_content: true
-            status_code: 200
-          register: link_get
-
-        - name: Create link if missing
-          uri:
-            url: "{{ sn_base }}/api/now/table/sc_cat_item_variable_set_mtom"
-            method: POST
-            headers:
-              Authorization: "Bearer {{ oauth.json.access_token }}"
-              Accept: application/json
-              Content-Type: application/json
-            body_format: json
-            body:
-              variable_set: "{{ varset_sys_id }}"
-              sc_cat_item: "{{ item_get.json.result[0].sys_id }}"
-            status_code: [200,201]
-          when: (link_get.json.result | default([]) | length) == 0
-      when: (item_get.json.result | default([]) | length) > 0
+    - debug:
+        msg: "✅ Created {{ created_variables.results | length }} Terraform variables in set {{ varset_name }}"

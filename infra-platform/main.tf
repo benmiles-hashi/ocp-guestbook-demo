@@ -1,5 +1,5 @@
 # Get subnets in default VPC filtered by AZ
-data "aws_vpcs" "rosa_vpc" {
+data "aws_vpc" "rosa_vpc" {
   id = var.rosa_vpc_id
 }
 data "aws_subnets" "rosa_subnets" {

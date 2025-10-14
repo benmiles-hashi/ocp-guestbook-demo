@@ -47,6 +47,7 @@ variable "aws_subnet_ids" {
 variable "aws_availability_zones" {
   type        = list(string)
   description = "AWS availability zones to use"
+  default = ["us-east-1a"]
 }
 
 variable "compute_machine_type" {
@@ -100,7 +101,7 @@ variable "idp_name" {
 
 variable "idp_username" {
   type        = string
-  default = "kubeadmin"
+  default = "cluster-admin"
   description = "Username for the htpasswd IDP"
 }
 

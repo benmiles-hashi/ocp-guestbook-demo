@@ -1,8 +1,3 @@
-# Get default VPC
-data "aws_vpc" "default" {
-  default = true
-}
-
 # Get subnets in default VPC filtered by AZ
 data "aws_subnets" "selected" {
   filter {

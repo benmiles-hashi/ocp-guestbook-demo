@@ -22,7 +22,7 @@ module "rosa_hcp" {
   service_cidr             = var.service_cidr
   pod_cidr                 = var.pod_cidr
   host_prefix              = var.host_prefix
-  aws_subnet_ids           = data.aws_subnets.selected.ids
+  aws_subnet_ids           = var.aws_subnet_ids
   aws_availability_zones   = var.aws_availability_zones
   compute_machine_type     = var.compute_machine_type
   create_account_roles     = var.create_account_roles

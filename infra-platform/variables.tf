@@ -39,10 +39,6 @@ variable "host_prefix" {
   default = 23
 }
 
-variable "aws_subnet_ids" {
-  type        = list(string)
-  description = "List of AWS subnet IDs for the cluster"
-}
 
 variable "aws_availability_zones" {
   type        = list(string)

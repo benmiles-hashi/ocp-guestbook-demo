@@ -49,7 +49,10 @@ variable "aws_availability_zones" {
   description = "AWS availability zones to use"
   default = ["us-east-1a"]
 }
-
+variable "rosa_vpc_id" {
+  type = string
+  default = "vpc-057d6f86cf89a68de"
+}
 variable "compute_machine_type" {
   type        = string
   description = "EC2 instance type for worker nodes"

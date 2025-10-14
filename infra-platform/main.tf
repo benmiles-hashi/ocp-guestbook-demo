@@ -1,13 +1,11 @@
 # Get subnets in default VPC filtered by AZ
-data "aws_subnets" "selected" {
+data "aws_vpcs" "rosa_vpc" {
+  id = var.rosa_vpc_id
+}
+data "aws_subnets" "rosa_subnets" {
   filter {
     name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-
-  filter {
-    name   = "availability-zone"
-    values = var.aws_availability_zones
+    values = [data.aws_vpc.rosa_vpc.id]
   }
 }
 
@@ -22,7 +20,7 @@ module "rosa_hcp" {
   service_cidr             = var.service_cidr
   pod_cidr                 = var.pod_cidr
   host_prefix              = var.host_prefix
-  aws_subnet_ids           = var.aws_subnet_ids
+  aws_subnet_ids           = data.aws_subnets.rosa_subnets.ids
   aws_availability_zones   = var.aws_availability_zones
   compute_machine_type     = var.compute_machine_type
   create_account_roles     = var.create_account_roles

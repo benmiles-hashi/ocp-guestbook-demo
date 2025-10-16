@@ -2,10 +2,12 @@
 data "vault_auth_backend" "jwt" {
   path = local.jwt_auth_path
 }
-
+resource "random_id" "postfix" {
+  byte_length = 6
+}
 # Vault entity representing the app
 resource "vault_identity_entity" "app" {
-  name = var.app_namespace
+  name = "${var.app_namespace}-${random_id.postfix.dec}"
 
   metadata = {
     AppName   = var.app_namespace

@@ -7,7 +7,7 @@ resource "random_id" "postfix" {
 }
 # Vault entity representing the app
 resource "vault_identity_entity" "app" {
-  name = "${var.app_namespace}-${random_id.postfix.dec}"
+  name = "${var.app_namespace}-${random_id.postfix.hex}"
 
   metadata = {
     AppName   = var.app_namespace

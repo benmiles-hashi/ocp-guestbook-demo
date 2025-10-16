@@ -32,7 +32,7 @@
         inputs:
           url: "{{ vault_addr }}"
           namespace: "{{ vault_namespace }}"
-          default_auth_path: "approle-aap"
+          default_auth_path: "approle-aap-{{cluster_id}}"
           role_id: "{{ vault_role_id }}"
           secret_id: "{{ vault_secret_id }}"
           api_version: "v2"

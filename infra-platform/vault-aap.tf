@@ -20,7 +20,7 @@ EOT
 }
 resource "vault_auth_backend" "approle" {
   type = "approle"
-  path = "approle-aap"
+  path = "approle-aap-${module.rosa_hcp.cluster_id}"
 }
 
 resource "vault_approle_auth_backend_role" "aap_controller" {

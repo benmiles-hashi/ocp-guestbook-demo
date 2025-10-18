@@ -42,7 +42,7 @@ output "app_route" {
   value = nonsensitive(replace(replace(local.api_url, "api", "${var.app_namespace}.apps.rosa"), ":443", ""))
 }
 output "ocp_server" {
-  value = data.vault_kv_secret_v2.infra.data["api_url"]
+  value = nonsensitive(data.vault_kv_secret_v2.infra.data["api_url"])
 }
 output "ocp_auth_role" {
   value = vault_kubernetes_secret_backend_role.terraform_admin.name

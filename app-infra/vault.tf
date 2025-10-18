@@ -127,3 +127,15 @@ resource "vault_database_secret_backend_role" "app1" {
   default_ttl = 120
   max_ttl     = 120
 }
+
+####Kubernetes Role
+resource "vault_kubernetes_secret_backend_role" "terraform_admin" {
+  backend = "kubernetes-admin-${var.cluster_id}"
+  name    = "${var.team_name}-${var.app_namespace}"
+
+  service_account_name          = var.sa_name
+  allowed_kubernetes_namespaces = [var.app_namespace]
+
+  token_default_ttl       = 21600
+  token_max_ttl           = 43200
+}

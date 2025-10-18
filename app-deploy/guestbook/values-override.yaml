@@ -8,9 +8,9 @@ image:
 # Database config
 db:
   # default DB/schema name = release namespace (overridable)
-  name: "myapp-db2"
+  name: "guestbook-db"
   # Option A: inject host directly (string)
-  host: "demo-db-2lrghak4kg63df46nn3nt0qc1spbmmv1.chgcwq4a61in.us-east-1.rds.amazonaws.com"
+  host: "demo-db-2luvubk1rd6r3hrnrj5jg4gudlbtdmb0.chgcwq4a61in.us-east-1.rds.amazonaws.com"
   # Option B: read host from a K8s Secret synced by Vault (preferred)
   hostFromSecret:
     enabled: false
@@ -28,8 +28,8 @@ vault:
 
   dynamicSecrets:
     - name: db-app-creds
-      mount: rosa-2lrghak4kg63df46nn3nt0qc1spbmmv1-database
-      path: creds/my-app2-role
+      mount: rosa-2luvubk1rd6r3hrnrj5jg4gudlbtdmb0-database
+      path: creds/guestbook-role
       allowStaticCreds: false
       refreshAfter: 30s
       renewalPercent: 50
@@ -39,9 +39,9 @@ vault:
 
   staticSecrets:
     - name: guestbook-kv
-      mount: openshift-rosa-2lrghak4kg63df46nn3nt0qc1spbmmv1
+      mount: openshift-rosa-2luvubk1rd6r3hrnrj5jg4gudlbtdmb0
       type: kv-v2
-      path: apps/team-e/my-app2/secretdata
+      path: apps/team-a/guestbook/secretdata
       refreshAfter: 10s
       destination:
         name: guestbook-kv
@@ -50,8 +50,8 @@ vault:
   pki:
     - name: guestbook-tls
       mount: pki_int
-      role: team-e
-      commonName: "guestbook.team-e.example.com"
+      role: team-a
+      commonName: "guestbook.team-a.example.com"
       altNames:
       ttl: 5m
       refreshAfter: 1m
@@ -75,7 +75,7 @@ service:
 
 route:
   enabled: true
-  host: "my-app2.apps.rosa.hashifsi.2md7.p3.openshiftapps.com"
+  host: "guestbook.apps.rosa.hashifsi.7jzd.p3.openshiftapps.com"
   termination: passthrough  # or edge
   tlsSecretName: guestbook-tls
 

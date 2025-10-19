@@ -1,3 +1,7 @@
-helm install guestbook ./helm -f values-override.yaml -n guestbook --create-namespace
+helm install guestbook ./helm -f values-override.yaml -n guestbook
 
 podman run -it --rm docker.io/mysql:8 mysql -h demo-db-2luvubk1rd6r3hrnrj5jg4gudlbtdmb0.chgcwq4a61in.us-east-1.rds.amazonaws.com -P 3306 -u vaultadmin -p
+
+Login to OCP namespace bound
+export OCP_TOKEN=$(vault write -field=service_account_token kubernetes-admin-2luvubk1rd6r3hrnrj5jg4gudlbtdmb0/creds/team-a-guestbook kubernetes_namespace=guestbook)
+oc login --token=$OCP_TOKEN

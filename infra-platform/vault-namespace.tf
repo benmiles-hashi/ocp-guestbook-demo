@@ -1,6 +1,6 @@
 
 resource "vault_namespace" "cluster_ns" {
-  provider = admin
+  provider = vault.admin
   path = "rosa-${module.rosa_hcp.cluster_id}"
 }
 
@@ -8,7 +8,7 @@ resource "vault_namespace" "cluster_ns" {
 # STEP 2: Enable userpass auth inside the namespace
 # ────────────────────────────────────────────────────────────────────────
 resource "vault_auth_backend" "userpass" {
-  provider = admin
+  provider = vault.admin
   namespace = vault_namespace.cluster_ns.path
   type      = "userpass"
   path      = "userpass"
@@ -18,7 +18,7 @@ resource "vault_auth_backend" "userpass" {
 # STEP 3: Create an admin policy inside the namespace
 # ────────────────────────────────────────────────────────────────────────
 resource "vault_policy" "admin_policy" {
-  provider = admin
+  provider = vault.admin
   namespace = vault_namespace.cluster_ns.path
   name      = "admin-policy"
 
@@ -43,7 +43,7 @@ resource "random_password" "admin_pass" {
 # STEP 5: Create the userpass admin user and attach the admin policy
 # ────────────────────────────────────────────────────────────────────────
 resource "vault_generic_endpoint" "admin_user" {
-    provider = admin
+    provider = vault.admin
   namespace = vault_namespace.cluster_ns.path
   path      = "auth/${vault_auth_backend.userpass.path}/users/admin"
 

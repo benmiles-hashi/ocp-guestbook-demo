@@ -22,10 +22,3 @@ resource "aap_job" "vso_install" {
   })
   wait_for_completion = true
 }
-
-ephemeral "vault_kv_secret_v2" "config" {
-  mount = "openshift-rosa-${var.cluster_id}"
-  name  = "config"
-  mount_id = vault_mount.kv_mount.id
-  depends_on = [ aap_job.vso_install ]
-}

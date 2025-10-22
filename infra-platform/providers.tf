@@ -28,9 +28,17 @@ provider "aws" {
   region = "us-east-1"
 }
 provider "vault" {
+  alias = "admin"
   address = var.vault_address
   token   = var.vault_root_token
   namespace = var.vault_namespace
+  skip_child_token = true
+}
+provider "vault" {
+  alias = "cluster"
+  address = var.vault_address
+  token   = var.vault_root_token
+  namespace = "${var.vault_namespace}/openshift-${module.rosa_hcp.cluster_id}"
   skip_child_token = true
 }
 provider "rhcs" {

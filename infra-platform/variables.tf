@@ -144,7 +144,7 @@ variable "vault_root_token" {
 }
 variable "vault_namespace" {
  type= string
- default = "admin" 
+ default = "admin"
 }
 variable "redhat_token" {
   type= string

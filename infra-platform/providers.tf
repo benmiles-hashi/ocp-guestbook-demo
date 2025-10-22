@@ -28,6 +28,11 @@ provider "aws" {
   region = "us-east-1"
 }
 provider "vault" {
+  address   = var.vault_address
+  token     = var.vault_root_token
+  namespace = "admin"
+}
+provider "vault" {
   alias = "admin"
   address = var.vault_address
   token   = var.vault_root_token

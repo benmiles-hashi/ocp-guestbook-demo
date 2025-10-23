@@ -1,5 +1,6 @@
 # Look up the JWT auth backend to get its accessor (needed for entity alias)
 data "vault_auth_backend" "jwt" {
+  namespace = data.vault_namespace.cluster_ns.path
   path = local.jwt_auth_path
 }
 resource "random_id" "postfix" {
@@ -7,6 +8,7 @@ resource "random_id" "postfix" {
 }
 # Vault entity representing the app
 resource "vault_identity_entity" "app" {
+  namespace = data.vault_namespace.cluster_ns.path
   name = "${var.app_namespace}-${random_id.postfix.hex}"
 
   metadata = {
@@ -18,6 +20,7 @@ resource "vault_identity_entity" "app" {
 
 # Map OCP SA -> Vault entity via JWT auth accessor
 resource "vault_identity_entity_alias" "app_alias" {
+  namespace = data.vault_namespace.cluster_ns.path
   name           = "system:serviceaccount:${var.app_namespace}:${var.sa_name}"
   canonical_id   = vault_identity_entity.app.id
   mount_accessor = data.vault_auth_backend.jwt.accessor
@@ -25,6 +28,7 @@ resource "vault_identity_entity_alias" "app_alias" {
 
 # PKI Role under pki_int for this team
 resource "vault_pki_secret_backend_role" "team_pki_role" {
+  namespace = data.vault_namespace.cluster_ns.path
   backend          = var.pki_mount
   name             = var.team_name
   allowed_domains  = [var.pki_allowed_domain]
@@ -37,6 +41,7 @@ resource "vault_pki_secret_backend_role" "team_pki_role" {
 
 # Policy allowing issuance for this team's PKI role
 resource "vault_policy" "pki_team" {
+  namespace = data.vault_namespace.cluster_ns.path
   name   = "pki-${var.app_namespace}-${var.team_name}"
   policy = <<EOT
 path "${var.pki_mount}/issue/${var.team_name}" {
@@ -45,6 +50,7 @@ path "${var.pki_mount}/issue/${var.team_name}" {
 EOT
 }
 resource "vault_policy" "kv_app" {
+  namespace = data.vault_namespace.cluster_ns.path
   name   = "kv-${var.team_name}-${var.app_namespace}"
   policy = <<EOT
 path "${local.vault_kv_mount}/data/apps/${var.team_name}/${var.app_namespace}/*" {
@@ -53,6 +59,7 @@ path "${local.vault_kv_mount}/data/apps/${var.team_name}/${var.app_namespace}/*"
 EOT
 }
 resource "vault_policy" "db_app" {
+  namespace = data.vault_namespace.cluster_ns.path
   name   = "db-${var.app_namespace}-${var.team_name}"
   policy = <<EOT
 path "rosa-${var.cluster_id}-database/creds/${var.app_namespace}-role" {
@@ -63,6 +70,7 @@ EOT
 
 # JWT role for the app namespace/serviceaccount
 resource "vault_jwt_auth_backend_role" "app" {
+  namespace = data.vault_namespace.cluster_ns.path
   backend         = local.jwt_auth_path
   role_name       = "${var.app_namespace}-role"
   role_type       = "jwt"
@@ -90,6 +98,7 @@ resource "vault_jwt_auth_backend_role" "app" {
 # Create test db variables
 ####
 resource "vault_kv_secret_v2" "app_static_db" {
+  namespace = data.vault_namespace.cluster_ns.path
   mount = local.vault_kv_mount
   name  = "apps/${var.team_name}/${var.app_namespace}/db_creds"
 
@@ -100,6 +109,7 @@ resource "vault_kv_secret_v2" "app_static_db" {
 
 }
 resource "vault_kv_secret_v2" "app_kv" {
+  namespace = data.vault_namespace.cluster_ns.path
   mount = local.vault_kv_mount
   name  = "apps/${var.team_name}/${var.app_namespace}/secretdata"
 
@@ -113,6 +123,7 @@ resource "vault_kv_secret_v2" "app_kv" {
 ###DB Role
 
 resource "vault_database_secret_backend_role" "app1" {
+  namespace = data.vault_namespace.cluster_ns.path
   backend = "rosa-${var.cluster_id}-database"
   name    = "${var.app_namespace}-role"
   db_name = "rds-mysql-connection"
@@ -130,6 +141,7 @@ resource "vault_database_secret_backend_role" "app1" {
 
 ####Kubernetes Role
 resource "vault_kubernetes_secret_backend_role" "terraform_admin" {
+  namespace = data.vault_namespace.cluster_ns.path
   backend = "kubernetes-admin-${var.cluster_id}"
   name    = "${var.team_name}-${var.app_namespace}"
 

@@ -1,15 +1,22 @@
+data "vault_namespace" "cluster_ns"{
+    path = "rosa-${var.cluster_id}"
+}
+
 # Cluster infra: api_url, api_ca_pem (from your Ansible stage)
 data "vault_kv_secret_v2" "infra" {
+  namespace = data.vault_namespace.cluster_ns.path
   mount = local.vault_kv_mount
   name  = "infra"
 }
 
 # Vault-side paths for k8s engine/role (and optional jwt auth path)
 data "vault_kv_secret_v2" "vault_meta" {
+  namespace = data.vault_namespace.cluster_ns.path
   mount = local.vault_kv_mount
   name  = "vault"
 }
 data "vault_kv_secret_v2" "rds" {
+  namespace = data.vault_namespace.cluster_ns.path
   mount = local.vault_kv_mount
   name  = "rds"
   
@@ -34,6 +41,7 @@ locals {
 
 # Mint a short-lived admin token for TF to talk to the cluster
 data "vault_kubernetes_service_account_token" "tf_admin" {
+  namespace = data.vault_namespace.cluster_ns.path
   backend              = local.k8s_engine_path
   role                 = local.k8s_role_name
   kubernetes_namespace = "kube-system"   # matches your SA location in cluster-admin setup

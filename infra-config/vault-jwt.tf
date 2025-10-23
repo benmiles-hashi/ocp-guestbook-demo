@@ -1,10 +1,7 @@
-data "vault_namespace" "cluster_ns" {
-  path = "rosa-${module.rosa_hcp.cluster_id}"
-}
 
 # --- Get ROSA cluster secrets from Vault ---
 data "vault_kv_secret_v2" "rosa_cluster_config" {
-  namespace = data.vault_namespace.cluster_ns.path
+  namespace = "rosa-${var.cluster_id}"
   mount     = "openshift-rosa-${var.cluster_id}"
   name      = "config"
 

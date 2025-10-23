@@ -1,6 +1,7 @@
 
 # Store RDS creds in Vault for reference
 resource "vault_kv_secret_v2" "infra_rds" {
+  namespace = vault_namespace.cluster_ns.path
   mount = vault_mount.secret.path
   name  = "rds"
 
@@ -15,12 +16,14 @@ resource "vault_kv_secret_v2" "infra_rds" {
 
 # Enable the database secrets engine if not already
 resource "vault_mount" "db" {
+  namespace = vault_namespace.cluster_ns.path
   path = "rosa-${module.rosa_hcp.cluster_id}-database"
   type = "database"
 }
 
 # Connection for RDS
 resource "vault_database_secret_backend_connection" "rds" {
+  namespace = vault_namespace.cluster_ns.path
   backend       = vault_mount.db.path
   name          = "rds-mysql-connection"
   allowed_roles = ["*"]
@@ -33,6 +36,7 @@ resource "vault_database_secret_backend_connection" "rds" {
   depends_on = [ aws_db_instance.demo, module.rosa_hcp ]
 }
 resource "vault_database_secret_backend_role" "rds_admin" {
+  namespace = vault_namespace.cluster_ns.path
   backend = vault_mount.db.path
   name    = "rds-admin"
   db_name = vault_database_secret_backend_connection.rds.name

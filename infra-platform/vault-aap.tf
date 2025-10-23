@@ -1,5 +1,5 @@
 resource "vault_policy" "kv_infra" {
-  #namespace = var.vault_namespace
+  namespace = vault_namespace.cluster_ns.path
   name      = "openshift-rosa-kv-read-infra-${module.rosa_hcp.cluster_id}"
 
   policy = <<EOT
@@ -9,7 +9,7 @@ path "openshift-rosa-${module.rosa_hcp.cluster_id}/*" {
 EOT
 }
 resource "vault_policy" "aap_vault_write" {
-  #namespace = var.vault_namespace
+  namespace = vault_namespace.cluster_ns.path
   name      = "openshift-rosa-kv-write-${module.rosa_hcp.cluster_id}"
 
   policy = <<EOT
@@ -19,11 +19,13 @@ path "openshift-rosa-${module.rosa_hcp.cluster_id}/*" {
 EOT
 }
 resource "vault_auth_backend" "approle" {
+  namespace = vault_namespace.cluster_ns.path
   type = "approle"
   path = "approle-aap-${module.rosa_hcp.cluster_id}"
 }
 
 resource "vault_approle_auth_backend_role" "aap_controller" {
+  namespace = vault_namespace.cluster_ns.path
   backend        = vault_auth_backend.approle.path
   role_name      = "aap-controller"
   token_policies = [
@@ -35,11 +37,13 @@ resource "vault_approle_auth_backend_role" "aap_controller" {
 }
 
 data "vault_approle_auth_backend_role_id" "aap_controller" {
+  namespace = vault_namespace.cluster_ns.path
   backend  = vault_auth_backend.approle.path
   role_name = vault_approle_auth_backend_role.aap_controller.role_name
 }
 
 resource "vault_approle_auth_backend_role_secret_id" "aap_controller" {
+  namespace = vault_namespace.cluster_ns.path
   backend  = vault_auth_backend.approle.path
   role_name = vault_approle_auth_backend_role.aap_controller.role_name
 }

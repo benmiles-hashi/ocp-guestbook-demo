@@ -11,12 +11,14 @@ resource "random_password" "kubeadmin_password" {
 
 # (Optional) Ensure KV v2 engine is enabled at "secret/"
 resource "vault_mount" "secret" {
+  namespace = vault_namespace.cluster_ns.path
   path = "openshift-rosa-${module.rosa_hcp.cluster_id}"
   type = "kv-v2"
 }
 
 # Write cluster info into Vault
 resource "vault_kv_secret_v2" "rosa_cluster_info" {
+  namespace = vault_namespace.cluster_ns.path
   mount = vault_mount.secret.path
   name  = "infra"
 

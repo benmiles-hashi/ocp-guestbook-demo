@@ -1,5 +1,6 @@
 
 resource "vault_token" "aap_job_token" {
+  namespace = vault_namespace.cluster_ns.path
   policies = ["openshift-rosa-kv-write-${module.rosa_hcp.cluster_id}"]
   ttl      = "1h"
   renewable = false
@@ -48,6 +49,7 @@ resource "aap_job" "tf_admin_sa" {
 }
 
 data "vault_kv_secret_v2" "ocp" {
+  namespace = vault_namespace.cluster_ns.path
   mount = "openshift-rosa-${module.rosa_hcp.cluster_id}"
   name  = "ocp"
   depends_on = [ aap_job.tf_admin_sa ]

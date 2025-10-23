@@ -7,7 +7,7 @@ locals {
 
 
 resource "vault_kubernetes_secret_backend" "config" {
-
+  namespace = vault_namespace.cluster_ns.path
   path                = "kubernetes-admin-${module.rosa_hcp.cluster_id}"
   description         = "Kubernetes SA token factory for ROSA cluster ${module.rosa_hcp.cluster_id}"
   kubernetes_host     = module.rosa_hcp.cluster_api_url
@@ -17,6 +17,7 @@ resource "vault_kubernetes_secret_backend" "config" {
 }
 
 resource "vault_kubernetes_secret_backend_role" "terraform_admin" {
+  namespace = vault_namespace.cluster_ns.path
   backend = vault_kubernetes_secret_backend.config.path
   name    = "terraform-admin"
 
@@ -28,6 +29,7 @@ resource "vault_kubernetes_secret_backend_role" "terraform_admin" {
 }
 
 resource "vault_kv_secret_v2" "vault_meta" {
+  namespace = vault_namespace.cluster_ns.path
   mount = local.mount_path
   name  = "vault"
 

@@ -10,10 +10,6 @@ data "aap_job_template" "tf_admin_sa" {
   organization_name = "Default"
 }
 
-data "aap_job_template" "vso_operator_install" {
-  name              = "OCP - VSO Operator Install"
-  organization_name = "Default"
-}
 data "aap_job_template" "vault_credential" {
   name              = "OCP - Vault Credential Setup"
   organization_name = "Default"
@@ -40,7 +36,7 @@ resource "aap_job" "tf_admin_sa" {
     cluster_id      = module.rosa_hcp.cluster_id
     vault_addr      = var.vault_address
     vault_token     = vault_token.aap_job_token.client_token
-    vault_namespace = "admin"
+    vault_namespace = vault_namespace.cluster_ns.path
     sa_namespace    = "kube-system"
     sa_name         = "tf-admin"
   })

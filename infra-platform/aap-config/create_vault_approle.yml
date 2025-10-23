@@ -13,7 +13,7 @@
     controller_password: "ansible123!"
     controller_validate_certs: false
     vault_addr: ""
-    vault_namespace: "admin"
+    vault_namespace: "admin/rosa-{{cluster_id}}"
     vault_role_id: ""
     vault_secret_id: ""
     organization: "Default"

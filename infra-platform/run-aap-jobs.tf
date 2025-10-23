@@ -20,7 +20,7 @@ resource "aap_job" "vault_credential" {
   extra_vars = jsonencode({
     cluster_id            = module.rosa_hcp.cluster_id
     vault_addr            = var.vault_address
-    vault_namespace       = vault_namespace.cluster_ns.path
+    vault_namespace       = "admin/${vault_namespace.cluster_ns.path}"
     controller_host       = var.aap_hostname
     controller_username   = var.aap_username
     controller_password   = var.aap_password
@@ -36,7 +36,7 @@ resource "aap_job" "tf_admin_sa" {
     cluster_id      = module.rosa_hcp.cluster_id
     vault_addr      = var.vault_address
     vault_token     = vault_token.aap_job_token.client_token
-    vault_namespace = vault_namespace.cluster_ns.path
+    vault_namespace = "admin/${vault_namespace.cluster_ns.path}"
     sa_namespace    = "kube-system"
     sa_name         = "tf-admin"
   })

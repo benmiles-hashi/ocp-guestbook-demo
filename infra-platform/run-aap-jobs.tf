@@ -24,7 +24,7 @@ resource "aap_job" "vault_credential" {
   extra_vars = jsonencode({
     cluster_id            = module.rosa_hcp.cluster_id
     vault_addr            = var.vault_address
-    vault_namespace       = "admin"
+    vault_namespace       = vault_namespace.cluster_ns.path
     controller_host       = var.aap_hostname
     controller_username   = var.aap_username
     controller_password   = var.aap_password

@@ -7,8 +7,8 @@
   vars:
 
     # HCP Vault specifics
-    vault_namespace: "admin"
-    vault_api_path: "admin/openshift-rosa-{{cluster_id}}/data/config"
+    vault_namespace: "admin/rosa-{{ cluster_id }}"
+    vault_api_path: "{{vault_namespace}}/openshift-rosa-{{cluster_id}}/data/config"
     # Operator subscription targets (cluster-wide)
     sub_namespace: "openshift-operators"
     operator_package: "vault-secrets-operator"

@@ -10,8 +10,9 @@
     - community.crypto
 
   vars:
+    vault_namespace: "admin/rosa-{{ cluster_id }}"
     vault_mount: "openshift-rosa-{{ cluster_id }}"
-    vault_path: "admin/{{ vault_mount }}/data/ocp"
+    vault_path: "{{ vault_namespace }}/{{ vault_mount }}/data/ocp"
     sa_namespace: "kube-system"
     sa_name: "tf-admin"
 

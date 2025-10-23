@@ -1,6 +1,6 @@
 
 resource "vault_token" "aap_job_token" {
-  
+  namespace = data.vault_namespace.cluster_ns.path
   policies = ["openshift-rosa-kv-write-${var.cluster_id}"]
   ttl      = "5m"
   renewable = false
@@ -17,7 +17,7 @@ resource "aap_job" "vso_install" {
     cluster_id      = var.cluster_id
     vault_addr      = var.vault_address
     vault_token     = vault_token.aap_job_token.client_token
-    vault_namespace = "admin"
+    vault_namespace = data.vault_namespace.cluster_ns.path
     sa_namespace    = "kube-system"
     sa_name         = "tf-admin"
   })

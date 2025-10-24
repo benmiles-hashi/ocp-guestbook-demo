@@ -31,7 +31,7 @@ resource "vault_pki_secret_backend_role" "team_pki_role" {
   namespace = data.vault_namespace.cluster_ns.path
   backend          = var.pki_mount
   name             = var.team_name
-  allowed_domains  = [var.pki_allowed_domain]
+  allowed_domains  = [var.pki_allowed_domain,local.app_url]
   allow_subdomains = true
   ttl              = "5m"
   max_ttl          = "1h"

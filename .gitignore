@@ -112,3 +112,4 @@ secrets.yaml
 **/*.env
 test/*
 *.old
+app-deploy/guestbook/values-override-teamc.yaml

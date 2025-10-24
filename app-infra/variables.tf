@@ -41,7 +41,7 @@ variable "team_name" {
 variable "pki_mount" {
   description = "Existing Vault PKI mount to issue certs from (intermediate)"
   type        = string
-  default     = "pki_int"
+  default     = "ocp-pki-int"
 }
 
 variable "pki_allowed_domain" {

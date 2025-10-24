@@ -46,6 +46,10 @@ resource "vault_mount" "pki_root" {
   path      = "ocp-pki-root"
   type      = "pki"
   max_lease_ttl_seconds = 315360000  # 10 years
+  lifecycle {
+    prevent_destroy = true
+  }
+
 }
 
 resource "vault_pki_secret_backend_root_cert" "root_ca" {
@@ -56,6 +60,10 @@ resource "vault_pki_secret_backend_root_cert" "root_ca" {
   key_type      = "rsa"
   key_bits      = 4096
   exclude_cn_from_sans = true
+  lifecycle {
+    prevent_destroy = true
+  }
+
   depends_on    = [vault_mount.pki_root]
 }
 

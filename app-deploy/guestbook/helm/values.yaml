@@ -59,6 +59,13 @@ vault:
       destination:
         name: guestbook-tls
         type: kubernetes.io/tls
+      rolloutRestart:
+        enabled: true
+        extraTargets:
+          #- kind: Deployment
+          #  name: sidecar-injector
+          #- kind: StatefulSet
+          #  name: metrics
 
 # DB init job settings
 dbInit:

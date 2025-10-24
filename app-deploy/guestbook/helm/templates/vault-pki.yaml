@@ -36,6 +36,17 @@ spec:
     {{- if .destination.type }}
     type: {{ .destination.type }}
     {{- end }}
+  {{- if or .rolloutRestart.enabled (and .rolloutRestart.extraTargets (gt (len .rolloutRestart.extraTargets) 0)) }}
+  rolloutRestartTargets:
+  {{- if .rolloutRestart.enabled }}
+    - kind: Deployment
+      name: {{ $.Release.Name }}
+  {{- end }}
+  {{- range .rolloutRestart.extraTargets }}
+    - kind: {{ .kind }}
+      name: {{ .name }}
+  {{- end }}
+  {{- end }}
 ---
 {{- end }}
 {{- end }}

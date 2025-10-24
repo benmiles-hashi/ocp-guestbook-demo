@@ -135,8 +135,8 @@ resource "vault_database_secret_backend_role" "app1" {
   revocation_statements = [
     "DROP USER IF EXISTS '{{name}}'@'%';"
   ]
-  default_ttl = 120
-  max_ttl     = 120
+  default_ttl = 300
+  max_ttl     = 300
 }
 
 ####Kubernetes Role

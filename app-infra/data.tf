@@ -37,7 +37,6 @@ locals {
     format("https://%s", data.vault_kv_secret_v2.infra.data["oidc_endpoint_url"]),
     "https://kubernetes.default.svc"
   )
-  # If you didn't store jwt_auth_path in KV, we'll default it:
   jwt_auth_path    = try(data.vault_kv_secret_v2.vault_meta.data["jwt_auth_path"], "jwt-${var.cluster_id}")
 }
 

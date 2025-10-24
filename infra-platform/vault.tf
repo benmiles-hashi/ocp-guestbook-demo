@@ -43,14 +43,14 @@ resource "vault_kv_secret_v2" "rosa_cluster_info" {
 
 # ─── Root CA ──────────────────────────────────────────────
 resource "vault_mount" "pki_root" {
-  namespace = var.vault_namespace
+  namespace = "admin"
   path      = "ocp-pki-root"
   type      = "pki"
   max_lease_ttl_seconds = 315360000  # 10 years
 }
 
 resource "vault_pki_secret_backend_root_cert" "root_ca" {
-  namespace     = var.vault_namespace
+  namespace     = "admin"
   backend       = vault_mount.pki_root.path
   type          = "internal"
   common_name   = "OCP Root CA"

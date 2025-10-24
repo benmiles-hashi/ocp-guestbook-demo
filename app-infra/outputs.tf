@@ -40,7 +40,7 @@ output "pki_common_name" {
 }
 output "app_route" {
   #value = nonsensitive(replace(replace(local.api_url, "api", "${var.app_namespace}.apps.rosa"), ":443", ""))
-  value = nonsensitive(local.app_url)
+  value = local.app_url
 }
 output "ocp_server" {
   value = nonsensitive(data.vault_kv_secret_v2.infra.data["api_url"])

@@ -24,7 +24,7 @@ data "vault_kv_secret_v2" "rds" {
 
 locals {
 
-  app_url = replace(replace(local.api_url, "api", "${var.app_namespace}.apps.rosa"), ":443", "")
+  app_url = nonsensitive(replace(replace(local.api_url, "api", "${var.app_namespace}.apps.rosa"), ":443", ""))
   vault_kv_mount   = "openshift-rosa-${var.cluster_id}"
   api_url          = data.vault_kv_secret_v2.infra.data["api_url"]
   api_ca_pem       = try(data.vault_kv_secret_v2.infra.data["api_ca_pem"], "")

@@ -80,7 +80,7 @@ resource "vault_pki_secret_backend_intermediate_cert_request" "int_csr" {
 
 # Sign intermediate CSR with the root CA
 resource "vault_pki_secret_backend_root_sign_intermediate" "int_signed" {
-  namespace   = vault_namespace.cluster_ns.path
+  #namespace   = vault_namespace.cluster_ns.path
   backend     = vault_mount.pki_root.path
   csr         = vault_pki_secret_backend_intermediate_cert_request.int_csr.csr
   common_name = "OCP Intermediate CA"

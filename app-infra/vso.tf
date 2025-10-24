@@ -8,7 +8,7 @@ resource "kubernetes_manifest" "vault_auth" {
       "namespace" = kubernetes_namespace.app.metadata[0].name
     }
     "spec" = {
-      "namespace" = data.vault_namespace.cluster_ns.path
+      "namespace" = "admin/${data.vault_namespace.cluster_ns.path}"
       "method" = "jwt"
       "mount"  = local.jwt_auth_path
       "jwt" = {

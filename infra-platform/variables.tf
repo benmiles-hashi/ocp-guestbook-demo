@@ -39,7 +39,11 @@ variable "host_prefix" {
   default = 23
 }
 
-
+variable "pki_root" {
+  type = string
+  description = "Path to PKI CA"
+  default = "ocp-pki-ca"
+}
 variable "aws_availability_zones" {
   type        = list(string)
   description = "AWS availability zones to use"

@@ -34,16 +34,8 @@ resource "vault_kv_secret_v2" "rosa_cluster_info" {
 }
 
 #########################################
-# Root + Intermediate PKI Setup
+# PKI Intermediate per Namespace
 #########################################
-
-#########################################
-# PKI Root + Intermediate per Namespace
-#########################################
-
-data "vault_mount" "pki_root" {
-  path      = "ocp-pki-root"
-}
 
 # ─── Intermediate CA ──────────────────────────────────────
 resource "vault_mount" "pki_int" {
@@ -67,7 +59,7 @@ resource "vault_pki_secret_backend_intermediate_cert_request" "int_csr" {
 # Sign intermediate CSR with the root CA
 resource "vault_pki_secret_backend_root_sign_intermediate" "int_signed" {
   #namespace   = vault_namespace.cluster_ns.path
-  backend     = data.vault_mount.pki_root.path
+  backend     = var.pki_root
   csr         = vault_pki_secret_backend_intermediate_cert_request.int_csr.csr
   common_name = "OCP Intermediate CA"
   ttl         = "43800h"  # 5 years

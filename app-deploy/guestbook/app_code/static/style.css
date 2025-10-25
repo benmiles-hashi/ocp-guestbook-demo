@@ -104,3 +104,9 @@ border-radius: 8px;
 margin-top: 1rem;
 color: #003366;
 }
+.footer {
+  margin-top: 2em;
+  font-size: 0.9em;
+  color: #777;
+  text-align: center;
+}

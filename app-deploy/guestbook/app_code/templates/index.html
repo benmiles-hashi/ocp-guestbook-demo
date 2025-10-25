@@ -6,7 +6,7 @@
 </head>
 <body>
     <div class="container">
-      <h1>✍️ Vault Guestbook Demo (VSO)</h1>
+      <h1>✍️ Vault Secrets Operator Guestbook</h1>
 
       <!-- Cert Info -->
       <div class="info-grid">
@@ -56,6 +56,11 @@
         </ul>
         </div>
       </div>
+      <footer class="footer">
+        <hr>
+        <p><strong>Pod:</strong> {{ pod_name }}</p>
+        <p><strong>Namespace:</strong> {{ pod_namespace }}</p>
+      </footer>
     </div>
   </body>
 </html>

@@ -41,30 +41,8 @@ resource "vault_kv_secret_v2" "rosa_cluster_info" {
 # PKI Root + Intermediate per Namespace
 #########################################
 
-# ─── Root CA ──────────────────────────────────────────────
-resource "vault_mount" "pki_root" {
+data "vault_mount" "pki_root" {
   path      = "ocp-pki-root"
-  type      = "pki"
-  max_lease_ttl_seconds = 315360000  # 10 years
-  lifecycle {
-    prevent_destroy = true
-  }
-
-}
-
-resource "vault_pki_secret_backend_root_cert" "root_ca" {
-  backend       = vault_mount.pki_root.path
-  type          = "internal"
-  common_name   = "OCP Root CA"
-  ttl           = "87600h"  # 10 years
-  key_type      = "rsa"
-  key_bits      = 4096
-  exclude_cn_from_sans = true
-  lifecycle {
-    prevent_destroy = true
-  }
-
-  depends_on    = [vault_mount.pki_root]
 }
 
 # ─── Intermediate CA ──────────────────────────────────────
@@ -89,7 +67,7 @@ resource "vault_pki_secret_backend_intermediate_cert_request" "int_csr" {
 # Sign intermediate CSR with the root CA
 resource "vault_pki_secret_backend_root_sign_intermediate" "int_signed" {
   #namespace   = vault_namespace.cluster_ns.path
-  backend     = vault_mount.pki_root.path
+  backend     = data.vault_mount.pki_root.path
   csr         = vault_pki_secret_backend_intermediate_cert_request.int_csr.csr
   common_name = "OCP Intermediate CA"
   ttl         = "43800h"  # 5 years
@@ -133,7 +111,7 @@ resource "vault_pki_secret_backend_role" "server_tls" {
 
 # ─── Outputs (Optional) ───────────────────────────────────
 output "ocp_pki_root" {
-  value = vault_mount.pki_root.path
+  value = data.vault_mount.pki_root.path
 }
 
 output "ocp_pki_int" {

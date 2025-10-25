@@ -102,9 +102,6 @@ resource "vault_pki_secret_backend_role" "server_tls" {
 }
 
 # ─── Outputs (Optional) ───────────────────────────────────
-output "ocp_pki_root" {
-  value = data.vault_mount.pki_root.path
-}
 
 output "ocp_pki_int" {
   value = vault_mount.pki_int.path

@@ -42,7 +42,7 @@ variable "host_prefix" {
 variable "pki_root" {
   type = string
   description = "Path to PKI CA"
-  default = "ocp-pki-ca"
+  default = "ocp-pki-root"
 }
 variable "aws_availability_zones" {
   type        = list(string)

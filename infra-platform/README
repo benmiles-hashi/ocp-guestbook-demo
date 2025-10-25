@@ -1,5 +1,5 @@
 if tf destroy hangs and can't delete the database engine due to existing leases, force remove them before running destroy with:
 
-vault lease revoke -force -prefix rosa-2luvubk1rd6r3hrnrj5jg4gudlbtdmb0-database/creds 
+vault lease revoke -force -prefix rosa-2m41b94d0muv5hmngii9hqlrp0scsvvh-database/creds 
 
 replace database path with yours

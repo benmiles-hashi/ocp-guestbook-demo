@@ -1,0 +1,55 @@
+# Playbook: Install Vault Secrets Operator on ROSA
+
+## **Purpose**
+This playbook automates the installation and configuration of the **HashiCorp Vault Secrets Operator (VSO)** across a Red Hat OpenShift Service on AWS (ROSA) cluster.  
+It ensures the operator is deployed from the certified-operators catalog, configures OIDC trust between OpenShift and HashiCorp Vault, and registers the Vault connection required for dynamic secret management.
+
+---
+
+## **High-Level Flow**
+
+1. **Authenticate to OpenShift**
+   - Logs into the OpenShift API using cluster credentials.
+   - Captures an access token for subsequent Kubernetes API operations.
+
+2. **Install the Vault Secrets Operator**
+   - Creates a `Subscription` for the operator in the `openshift-operators` namespace.
+   - Waits until the `ClusterServiceVersion (CSV)` reaches a `Succeeded` state.
+
+3. **Enable OIDC Issuer Discovery**
+   - Creates a `ClusterRoleBinding` to allow unauthenticated access to the cluster’s OIDC issuer metadata.
+
+4. **Retrieve Cluster OIDC Information**
+   - Fetches the cluster’s OIDC issuer URL and JWKS endpoint.
+   - Extracts the TLS certificate chain and builds a CA bundle.
+
+5. **Write OIDC Details to Vault**
+   - Stores the `jwks_url` and `oidc_ca_chain` in HashiCorp Vault under:  
+     ```
+     admin/rosa-<cluster_id>/openshift-rosa-<cluster_id>/data/config
+     ```
+
+6. **Register Vault’s Certificate with OpenShift**
+   - Fetches the Vault server’s certificate chain.
+   - Creates a Kubernetes `Secret` named `vault-cacert` in the `openshift-operators` namespace containing the CA certificate.
+
+7. **Create the VaultConnection Custom Resource**
+   - Applies a `VaultConnection` CR that defines how the operator should securely connect to Vault (address, TLS verification, and CA reference).
+
+8. **Log Out of OpenShift**
+   - Cleans up the authentication session after all tasks complete.
+
+---
+
+## **Result**
+After running this playbook:
+
+- The **Vault Secrets Operator** is installed and ready for use across the ROSA cluster.
+- OIDC trust and TLS verification between OpenShift and Vault are configured.
+- The cluster can now dynamically sync and manage secrets stored in **HashiCorp Vault**.
+
+---
+
+## **Related Resources**
+- [Vault Secrets Operator Documentation](https://developer.hashicorp.com/vault/docs/platform/k8s/vso)
+- [Red Hat OpenShift Operators Guide](https://docs.openshift.com/container-platform/latest/operators/understanding/olm-understanding-operatorhub.html)

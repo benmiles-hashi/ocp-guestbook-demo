@@ -1,10 +1,43 @@
-This is a pre-req.  Run this local to prep your AAP server with the necessary job templates to complete the OCP and Vault runs.
+create_vault_approle.yml
 
-configures AAP project, inventory, and job_temples for:
-  ocp-tfe-admin-sa-setup.yml 
-  ocp-vso-operator-install.yml
-  create_vault_approle.yml
+  Bootstrapping AAP
 
-use:
-source aap-env.env
-ansible-playbook setup_aap_objects.yml
+  Authenticate to Vault using AppRole (via Vault RoleID/SecretID)
+
+  1. Define a new custom “OpenShift API Credential” type (for OCP API URL, username, password)
+  2. Link those fields dynamically to secrets that already exist in Vault KV
+  3. Attach that credential to specific job templates.
+  4. Creates the AAP Vault credentials and OCP custom
+
+  AAP pulls credentials from Vault automatically whenever a job runs, without storing them directly in AAP
+
+ocp-tfe-admin-sa-setup.yml
+
+  Automates creation of a privileged OpenShift service account (tf-admin-<cluster_id>) 
+  and securely stores its access token and cluster CA certificate in Vault for downstream automation
+  
+  1. Authenticate to OpenShift using cluster-admin credentials to obtain an API token.
+
+  2. Create a ServiceAccount named tf-admin-<cluster_id> in the kube-system namespace.
+
+  3. Bind the ServiceAccount to the cluster-admin role for full administrative rights.
+
+  4. Generate a service account token Secret and wait for Kubernetes to populate it.
+
+  5. Extract the token and the API server's CA certificate chain.
+
+  6. Write both the token and CA certificate into Vault's KV v2 store 
+      under the path admin/rosa-<cluster_id>/openshift-rosa-<cluster_id>/data/ocp.
+  
+setup_aap_objects.yml
+
+  This is a pre-req.  Run this local to prep your AAP server with the necessary job templates to complete the OCP and Vault runs.
+
+  configures AAP project, inventory, and job_temples for:
+    ocp-tfe-admin-sa-setup.yml 
+    ocp-vso-operator-install.yml
+    create_vault_approle.yml
+
+  use:
+  source aap-env.env
+  ansible-playbook setup_aap_objects.yml
